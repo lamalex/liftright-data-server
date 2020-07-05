@@ -14,15 +14,17 @@ pub struct User {
 pub fn get_or_make_if_new(conn: &PgConnection, device_id: &Uuid) -> Result<User, LiftrightError> {
     match find_user(conn, device_id)? {
         Some(user) => Ok(user),
-        None => register_user(conn, device_id)
+        None => {
+            register_user(conn, device_id)?;
+            get_or_make_if_new(conn, device_id)
+        }
     }
 }
 
-fn register_user(conn: &PgConnection, device_id: &Uuid) -> Result<User, LiftrightError> {
+fn register_user(conn: &PgConnection, device_id: &Uuid) -> Result<usize, LiftrightError> {
     insert_into(users::table)
         .values(users::device_id.eq(device_id))
-        .returning((users::id, users::device_id, users::rtfb))
-        .get_result(conn)
+        .execute(conn)
         .map_err(LiftrightError::DatabaseError)
 }
 

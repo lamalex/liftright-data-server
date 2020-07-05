@@ -11,6 +11,7 @@ use std::env;
 
 pub mod schema;
 pub mod user;
+pub mod repetition;
 
 #[derive(Debug)]
 pub enum LiftrightError {

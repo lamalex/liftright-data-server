@@ -3,6 +3,7 @@ CREATE TABLE repetitions (
     device_id UUID NOT NULL REFERENCES users(device_id),
     session_id UUID NOT NULL,
     set_id UUID NOT NULL,
+    exercise VARCHAR NOT NULL,
     rom REAL NOT NULL,
     velocity REAL NOT NULL, 
     duration REAL NOT NULL,
