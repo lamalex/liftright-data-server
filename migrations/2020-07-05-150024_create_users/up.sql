@@ -1,0 +1,5 @@
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    device_id UUID UNIQUE NOT NULL,
+    rtfb BOOLEAN NOT NULL DEFAULT 'f'
+);

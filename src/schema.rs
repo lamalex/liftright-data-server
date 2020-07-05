@@ -1,12 +1,12 @@
 table! {
     repetitions (id) {
         id -> Int4,
-        device_id -> Nullable<Uuid>,
-        set_id -> Uuid,
+        device_id -> Uuid,
         session_id -> Uuid,
-        rom -> Float8,
-        velocity -> Float8,
-        duration -> Float8,
+        set_id -> Uuid,
+        rom -> Float4,
+        velocity -> Float4,
+        duration -> Float4,
         rep_time -> Timestamptz,
         level -> Varchar,
     }
@@ -16,7 +16,7 @@ table! {
     users (id) {
         id -> Int4,
         device_id -> Uuid,
-        rtfp -> Bool,
+        rtfb -> Bool,
     }
 }
 
