@@ -1,8 +1,7 @@
 use uuid::Uuid;
+use diesel::{prelude::*, insert_into};
 use crate::schema::users;
 use crate::LiftrightError;
-use diesel::prelude::*;
-use diesel::{self, insert_into};
 
 #[derive(Queryable, Identifiable, Debug, PartialEq)]
 pub struct User {

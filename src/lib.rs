@@ -1,8 +1,5 @@
 #[macro_use]
 extern crate diesel;
-extern crate dotenv;
-extern crate uuid;
-extern crate chrono;
 
 use std::env;
 use dotenv::dotenv;
