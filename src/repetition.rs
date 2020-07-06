@@ -38,7 +38,7 @@ pub struct NewRepetition {
 
 impl Repetition {
     pub fn create(conn: &PgConnection, new_rep: NewRepetition) -> Result<usize, LiftrightError> {
-        crate::user::get_or_make_if_new(&conn, &new_rep.device_id)?;
+        User::get_or_make_if_new(&conn, &new_rep.device_id)?;
         diesel::insert_into(repetitions::table)
             .values(&new_rep)
             .execute(conn)

@@ -22,6 +22,7 @@ async fn main() {
 }
 
 mod filters {
+    use uuid::Uuid;
     use warp::Filter;
     use super::handlers;
 
@@ -29,7 +30,8 @@ mod filters {
     use liftright_data_server::{DbPool, DbPooledConnection};
 
     pub fn repetitions(db: DbPool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        repetitions_create(db)
+        repetitions_create(db.clone())
+        .or(rtfb_status(db))
         .or(hello())
     }
 
@@ -45,6 +47,13 @@ mod filters {
             .and(json_body())
             .and(with_db(db))
             .and_then(handlers::create_repetition)
+    }
+
+    fn rtfb_status(db: DbPool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path!("v1" / "rtfb_status" / Uuid)
+            .and(warp::get())
+            .and(with_db(db))
+            .and_then(handlers::rtfb_status)
     }
 
     fn json_body() -> impl Filter<Extract = (NewRepetition,), Error = warp::Rejection> + Clone {
@@ -67,7 +76,9 @@ mod filters {
 
 mod handlers {
     use warp::http;
-    
+    use uuid::Uuid;
+
+    use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
     use liftright_data_server::repetition::{Repetition, NewRepetition};
 
@@ -79,12 +90,19 @@ mod handlers {
     }
 
     pub async fn create_repetition(rep: NewRepetition, conn: DbPooledConnection) -> Result<impl warp::Reply, warp::Rejection> {
-            match Repetition::create(&conn, rep) {
-                Ok(_) => Ok(warp::reply::with_status(
-                    "good job",
-                    http::StatusCode::CREATED,
-                )),
-                Err(_) => Err(warp::reject())
-            }
+        match Repetition::create(&conn, rep) {
+            Ok(_) => Ok(warp::reply::with_status(
+                "good job",
+                http::StatusCode::CREATED,
+            )),
+            Err(_) => Err(warp::reject())
+        }
+    }
+
+    pub async fn rtfb_status(uuid: Uuid, conn: DbPooledConnection) -> Result<impl warp::Reply, std::convert::Infallible> {
+        match User::check_rtfb_status(&conn, &uuid) {
+            Ok(rtfb) => Ok(warp::reply::json(&rtfb)),
+            Err(_) => Ok(warp::reply::json(&false))
+        }
     }
 }
