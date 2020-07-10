@@ -12,6 +12,7 @@ async fn main() {
     pretty_env_logger::init();
 
     let db = liftright_data_server::establish_connection();
+
     let api = filters::repetitions(db);
     let routes = api.with(warp::log("liftright_data_server"));
 

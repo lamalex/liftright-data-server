@@ -6,14 +6,15 @@ edition = "2018"
 
 [dependencies]
 warp = "0.2"
+tokio = { version = "0.2", features = ["macros"] }
+dotenv = "0.15.0"
 parking_lot = "0.10.0"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "0.2", features = ["macros"] }
-diesel = { version = "1.4", features = ["postgres", "r2d2", "uuid", "chrono", "serde_json", "numeric"] }
-dotenv = "0.15.0"
-uuid = { version = ">=0.2.0, <0.7.0", features = ["serde"] }
-chrono = { version = "0.4", features = ["serde"] }
 serde_json = "1.0"
 serde_derive = "1.0"
+diesel = { version = "1.4", features = ["postgres", "r2d2", "uuid", "chrono", "serde_json", "numeric"] }
+diesel_migrations = "1.4"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = ">=0.2.0, <0.7.0", features = ["serde"] }
 log = "0.4"
 pretty_env_logger = "0.4"

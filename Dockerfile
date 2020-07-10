@@ -13,6 +13,9 @@ ADD . ./
 RUN rm ./target/release/deps/liftright_data_server*
 RUN cargo build --release
 
+# ------------------------------------------------------------------------------
+# Final Stage
+# ------------------------------------------------------------------------------
 FROM debian:buster-slim
 ARG APP=/usr/src/liftright-data-server
 
@@ -36,13 +39,3 @@ USER $APP_USER
 WORKDIR ${APP}
 
 CMD ["./liftright-data-server"]
-
-# ------------------------------------------------------------------------------
-# Final Stage
-# ------------------------------------------------------------------------------
-
-#FROM alpine:latest
-
-#COPY --from=cargo-build /usr/local/cargo/bin/liftright-data-server /usr/local/bin/liftright-data-server
-
-#CMD ["/usr/local/cargo/bin/liftright-data-server"]
