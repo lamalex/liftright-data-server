@@ -1,10 +1,11 @@
-#[macro_use]
-extern crate diesel;
+
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate diesel_migrations;
 
 use std::env;
 use dotenv::dotenv;
 use diesel::pg::PgConnection;
-use diesel_migrations::run_pending_migrations;
+
 use diesel::r2d2::{Pool, PooledConnection, ConnectionManager, PoolError};
 
 pub mod schema;
@@ -21,6 +22,8 @@ pub type DbConnection = PgConnection;
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 pub type DbPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
+embed_migrations!("./migrations/");
+
 pub fn establish_connection() -> DbPool {
     dotenv().ok();
 
@@ -28,7 +31,7 @@ pub fn establish_connection() -> DbPool {
     let pool = create_pool(&database_url).expect("Failed to establish connection pool");
     
     let conn: DbPooledConnection = pool.get().unwrap();
-    run_pending_migrations(&conn).expect("Failed to run database migrations");
+    embedded_migrations::run(&conn).expect("Failed to run database migrations");
 
     pool
 }
