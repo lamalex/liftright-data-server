@@ -1,9 +1,24 @@
 use std::env;
-use std::net::SocketAddrV4;
-use warp::Filter;
+use clap::{crate_version, value_t, App, Arg};
 
-#[tokio::main]
-async fn main() {
+fn main() {
+    const DEFAULT_PORT: u32 = 3030;
+    const ABOUT: &'static str = "Simple data collection server for LiftRight";
+
+    let opts = App::new("liftright data server")
+        .version(crate_version!())
+        .author("Alex L. Launi <alaun001@odu.edu>")
+        .about(ABOUT)
+        .arg(
+            Arg::with_name("port")
+                .help("Port to listen on (default 3030)")
+                .short("p")
+                .long("port")
+                .takes_value(true)
+                .value_name("PORT"),
+        );
+    let port = value_t!(opts.value_of("port"), u32).unwrap_or(DEFAULT_PORT);
+
     if env::var_os("RUST_LOG").is_none() {
         // Set `RUST_LOG=liftright_data_server=debug` to see debug logs,
         // this only shows access logs.
@@ -11,15 +26,26 @@ async fn main() {
     }
     pretty_env_logger::init();
 
-    let db = liftright_data_server::establish_connection();
+    webserver::run(port)
+}
 
-    let api = filters::repetitions(db);
-    let routes = api.with(warp::log("liftright_data_server"));
-
-    let addr: SocketAddrV4 = "0.0.0.0:3030".parse()
-        .expect("Could not create IP.");
+mod webserver {
+    use warp::Filter;
+    use super::filters;
+    use std::net::SocketAddrV4;
     
-    warp::serve(routes).run(addr).await
+    #[tokio::main]
+    pub async fn run(port: u32) {
+        let db = liftright_data_server::establish_connection();
+
+        let api = filters::repetitions(db);
+        let routes = api.with(warp::log("liftright_data_server"));
+
+        let addr: SocketAddrV4 = format!("0.0.0.0:{}", port).parse()
+            .expect("Could not create IP.");
+        
+        warp::serve(routes).run(addr).await
+    }
 }
 
 mod filters {
@@ -37,9 +63,9 @@ mod filters {
     }
 
     fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        warp::path!("v1" / "hello" / String)
+        warp::path!("v1" / "heartbeat")
             .and(warp::get())
-            .and_then(handlers::hello)
+            .and_then(handlers::heartbeat)
     }
 
     fn repetitions_create(db: DbPool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -83,9 +109,10 @@ mod handlers {
     use liftright_data_server::DbPooledConnection;
     use liftright_data_server::repetition::{Repetition, NewRepetition};
 
-    pub async fn hello(name: String) -> Result<impl warp::Reply, warp::Rejection> {
+    pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
+        let now = std::time::SystemTime::now().duration_since(std::time::SystemTime::UNIX_EPOCH).expect("System time is before epoch!").as_secs();
         Ok(warp::reply::with_status(
-            format!("Hello, {}", name),
+            format!("{}", now),
             http::StatusCode::OK
         ))
     }
