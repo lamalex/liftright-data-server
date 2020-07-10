@@ -29,6 +29,7 @@ pub struct NewRepetition {
     pub session_id: Uuid,
     pub set_id: Uuid,
     pub exercise: String,
+    pub number: i16,
     pub rom: f32,
     pub velocity: f32,
     pub duration: f32,

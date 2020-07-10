@@ -5,6 +5,7 @@ table! {
         session_id -> Uuid,
         set_id -> Uuid,
         exercise -> Varchar,
+        number -> Int2,
         rom -> Float4,
         velocity -> Float4,
         duration -> Float4,

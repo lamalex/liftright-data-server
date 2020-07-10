@@ -4,6 +4,7 @@ CREATE TABLE repetitions (
     session_id UUID NOT NULL,
     set_id UUID NOT NULL,
     exercise VARCHAR NOT NULL,
+    number SMALLINT NOT NULL,
     rom REAL NOT NULL,
     velocity REAL NOT NULL, 
     duration REAL NOT NULL,
