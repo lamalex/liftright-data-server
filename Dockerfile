@@ -1,16 +1,32 @@
-FROM ekidd/rust-musl-builder:stable as builder
+# ------------------------------------------------------------------------------
+# Cargo Build Stage
+# ------------------------------------------------------------------------------
 
-RUN USER=root cargo new --bin rust-docker-web
-WORKDIR ./rust-docker-web
-COPY ./Cargo.lock ./Cargo.lock
-COPY ./Cargo.toml ./Cargo.toml
+FROM rust:latest as cargo-build
+
+WORKDIR /usr/src/liftright-data-server
+
+COPY Cargo.lock Cargo.lock
+COPY Cargo.toml Cargo.toml
+
+RUN mkdir src/
+
+RUN echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs
+
 RUN cargo build --release
-RUN rm src/*.rs
 
-ADD . ./
+RUN rm -f target/release/deps/liftright-data-server
 
-RUN rm ./target/x86_64-unknown-linux-musl/release/deps/rust_docker_web*
-RUN cargo build --release
+COPY . .
 
+RUN cargo install --path .
 
-FROM alpine:latest
+# ------------------------------------------------------------------------------
+# Final Stage
+# ------------------------------------------------------------------------------
+
+#FROM alpine:latest
+
+#COPY --from=cargo-build /usr/local/cargo/bin/liftright-data-server /usr/local/bin/liftright-data-server
+
+CMD ["/usr/local/cargo/bin/liftright-data-server"]

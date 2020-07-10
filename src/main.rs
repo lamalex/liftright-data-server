@@ -15,7 +15,7 @@ async fn main() {
     let api = filters::repetitions(db);
     let routes = api.with(warp::log("liftright_data_server"));
 
-    let addr: SocketAddrV4 = "127.0.0.1:3030".parse()
+    let addr: SocketAddrV4 = "0.0.0.0:3030".parse()
         .expect("Could not create IP.");
     
     warp::serve(routes).run(addr).await
