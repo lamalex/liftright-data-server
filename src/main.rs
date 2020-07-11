@@ -16,7 +16,9 @@ fn main() {
                 .long("port")
                 .takes_value(true)
                 .value_name("PORT"),
-        );
+        )
+        .get_matches();
+        
     let port = value_t!(opts.value_of("port"), u32).unwrap_or(DEFAULT_PORT);
 
     if env::var_os("RUST_LOG").is_none() {
