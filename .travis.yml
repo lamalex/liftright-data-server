@@ -8,8 +8,6 @@ services:
   - docker
 
 script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all
-  - docker build -t lr-dataserver:latest -f Dockerfile . 
+  - docker build -t alexlauni/liftright-data-server -f Dockerfile . 
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
   - docker push alexlauni/liftright-data-server
