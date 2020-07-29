@@ -64,10 +64,10 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         repetitions_create(db.clone())
             .or(rtfb_status(db))
-            .or(hello())
+            .or(heartbeat())
     }
 
-    fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    fn heartbeat() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "heartbeat")
             .and(warp::get())
             .and_then(handlers::heartbeat)
