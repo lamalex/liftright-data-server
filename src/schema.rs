@@ -15,6 +15,15 @@ table! {
 }
 
 table! {
+    survey_results (id) {
+        id -> Int4,
+        device_id -> Uuid,
+        submitted -> Timestamptz,
+        survey_data -> Varchar,
+    }
+}
+
+table! {
     users (id) {
         id -> Int4,
         device_id -> Uuid,
@@ -24,5 +33,6 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     repetitions,
+    survey_results,
     users,
 );
