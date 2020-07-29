@@ -57,13 +57,15 @@ mod filters {
     use warp::Filter;
 
     use liftright_data_server::repetition::NewRepetition;
+    use liftright_data_server::survey::SurveyData;
     use liftright_data_server::{DbPool, DbPooledConnection};
 
     pub fn rest_api(
         db: DbPool,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         repetitions_create(db.clone())
-            .or(rtfb_status(db))
+            .or(rtfb_status(db.clone()))
+            .or(survey_submit(db))
             .or(heartbeat())
     }
 
@@ -78,7 +80,7 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "add_repetition")
             .and(warp::post())
-            .and(json_body())
+            .and(json_body_rep())
             .and(with_db(db))
             .and_then(handlers::create_repetition)
     }
@@ -92,7 +94,23 @@ mod filters {
             .and_then(handlers::rtfb_status)
     }
 
-    fn json_body() -> impl Filter<Extract = (NewRepetition,), Error = warp::Rejection> + Clone {
+    fn survey_submit(
+        db: DbPool,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path!("v1" / "submit_survey")
+            .and(warp::post())
+            .and(json_body_survey())
+            .and(with_db(db))
+            .and_then(handlers::submit_survey)
+    }
+
+    fn json_body_rep() -> impl Filter<Extract = (NewRepetition,), Error = warp::Rejection> + Clone {
+        // When accepting a body, we want a JSON body
+        // (and to reject huge payloads)...
+        warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+    }
+
+    fn json_body_survey() -> impl Filter<Extract = (SurveyData,), Error = warp::Rejection> + Clone {
         // When accepting a body, we want a JSON body
         // (and to reject huge payloads)...
         warp::body::content_length_limit(1024 * 16).and(warp::body::json())
@@ -119,6 +137,7 @@ mod handlers {
     use liftright_data_server::repetition::{NewRepetition, Repetition};
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
+    use liftright_data_server::{survey, survey::SurveyData};
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
         let now = std::time::SystemTime::now()
@@ -151,6 +170,19 @@ mod handlers {
         match User::check_rtfb_status(&conn, &uuid) {
             Ok(rtfb) => Ok(warp::reply::json(&rtfb)),
             Err(_) => Ok(warp::reply::json(&false)),
+        }
+    }
+
+    pub async fn submit_survey(
+        survey_data: SurveyData,
+        conn: DbPooledConnection,
+    ) -> Result<impl warp::Reply, warp::Rejection> {
+        match survey::submit(&conn, survey_data) {
+            Ok(_) => Ok(warp::reply::with_status(
+                "thanks",
+                http::StatusCode::CREATED,
+            )),
+            Err(_) => Err(warp::reject()),
         }
     }
 }
