@@ -80,7 +80,7 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "add_repetition")
             .and(warp::post())
-            .and(json_body_rep())
+            .and(json_deserialize::<NewRepetition>())
             .and(with_db(db))
             .and_then(handlers::create_repetition)
     }
@@ -99,20 +99,15 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "submit_survey")
             .and(warp::post())
-            .and(json_body_survey())
+            .and(json_deserialize::<SurveyData>())
             .and(with_db(db))
             .and_then(handlers::submit_survey)
     }
 
-    fn json_body_rep() -> impl Filter<Extract = (NewRepetition,), Error = warp::Rejection> + Clone {
-        // When accepting a body, we want a JSON body
-        // (and to reject huge payloads)...
-        warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    }
-
-    fn json_body_survey() -> impl Filter<Extract = (SurveyData,), Error = warp::Rejection> + Clone {
-        // When accepting a body, we want a JSON body
-        // (and to reject huge payloads)...
+    fn json_deserialize<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
+    where
+        T: serde::de::DeserializeOwned + Send,
+    {
         warp::body::content_length_limit(1024 * 16).and(warp::body::json())
     }
 
