@@ -56,7 +56,7 @@ mod filters {
     use warp::Filter;
 
     use liftright_data_server::repetition::NewRepetition;
-    use liftright_data_server::survey::SurveyData;
+    use liftright_data_server::survey::IncomingSurvey;
     use liftright_data_server::{DbPool, DbPooledConnection};
 
     pub fn rest_api(
@@ -98,7 +98,7 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "submit_survey")
             .and(warp::post())
-            .and(json_deserialize::<SurveyData>())
+            .and(json_deserialize::<IncomingSurvey>())
             .and(with_db(db))
             .and_then(handlers::submit_survey)
     }
@@ -131,7 +131,7 @@ mod handlers {
     use liftright_data_server::repetition::{NewRepetition, Repetition};
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
-    use liftright_data_server::{survey, survey::SurveyData};
+    use liftright_data_server::{survey, survey::IncomingSurvey};
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
         let now = std::time::SystemTime::now()
@@ -168,7 +168,7 @@ mod handlers {
     }
 
     pub async fn submit_survey(
-        survey_data: SurveyData,
+        survey_data: IncomingSurvey,
         conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         match survey::submit(&conn, survey_data) {
