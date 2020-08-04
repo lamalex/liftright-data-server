@@ -40,14 +40,13 @@ mod webserver {
     pub async fn run(port: u32) {
         let db = liftright_data_server::establish_connection();
 
-        let api = filters::rest_api(db);
-        let routes = api.with(warp::log("liftright_data_server"));
+        let api = filters::rest_api(db).with(warp::log("liftright_data_server"));
 
         let addr: SocketAddrV4 = format!("0.0.0.0:{}", port)
             .parse()
             .expect("Could not create IP.");
 
-        warp::serve(routes).run(addr).await
+        warp::serve(api).run(addr).await
     }
 }
 
