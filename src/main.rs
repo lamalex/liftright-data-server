@@ -57,7 +57,7 @@ mod filters {
 
     use liftright_data_server::imurecords::ImuRecordSet;
     use liftright_data_server::repetition::NewRepetition;
-    use liftright_data_server::survey::IncomingSurvey;
+    use liftright_data_server::survey::Survey;
     use liftright_data_server::{DbPool, DbPooledConnection};
 
     pub fn rest_api(
@@ -80,7 +80,7 @@ mod filters {
         db: DbPool,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "add_repetition")
-            .and(warp::post())
+            .and(warp::put())
             .and(json_deserialize::<NewRepetition>())
             .and(with_db(db))
             .and_then(handlers::create_repetition)
@@ -100,7 +100,7 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "submit_survey")
             .and(warp::post())
-            .and(json_deserialize::<IncomingSurvey>())
+            .and(json_deserialize::<Survey>())
             .and(with_db(db))
             .and_then(handlers::submit_survey)
     }
@@ -144,7 +144,7 @@ mod handlers {
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
     use liftright_data_server::{imurecords, imurecords::ImuRecordSet};
-    use liftright_data_server::{survey, survey::IncomingSurvey};
+    use liftright_data_server::{survey, survey::Survey};
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
         let now = std::time::SystemTime::now()
@@ -181,7 +181,7 @@ mod handlers {
     }
 
     pub async fn submit_survey(
-        survey_data: IncomingSurvey,
+        survey_data: Survey,
         conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         match survey::submit(&conn, survey_data) {

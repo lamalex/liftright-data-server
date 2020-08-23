@@ -12,7 +12,7 @@ extern crate diesel_migrations;
 pub mod imurecords;
 pub mod repetition;
 pub mod schema;
-pub mod sessions;
+pub mod session;
 pub mod survey;
 pub mod user;
 

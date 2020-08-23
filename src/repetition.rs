@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::schema::repetitions;
+use crate::session::Session;
 use crate::user::User;
 use crate::LiftrightError;
 
 #[derive(Debug, Clone, Queryable, Identifiable, Associations, Serialize)]
 #[belongs_to(User, foreign_key = "device_id")]
+#[belongs_to(Session, foreign_key = "id")]
 pub struct Repetition {
     pub id: i32,
     pub device_id: Uuid,
@@ -40,6 +42,14 @@ pub struct NewRepetition {
 impl Repetition {
     pub fn create(conn: &PgConnection, new_rep: NewRepetition) -> Result<usize, LiftrightError> {
         User::get_or_make_if_new(&conn, &new_rep.device_id)?;
+        Session::get_or_make_if_new(
+            &conn,
+            Session {
+                id: new_rep.session_id,
+                device_id: new_rep.device_id,
+            },
+        )?;
+
         diesel::insert_into(repetitions::table)
             .values(&new_rep)
             .execute(conn)
@@ -53,7 +63,7 @@ mod test {
     use uuid::Uuid;
     #[test]
     fn deserialize_repetiton() {
-        serde_json::from_str::<NewRepetition>(&make_valid_rep_json_string()).unwrap();
+        assert!(serde_json::from_str::<NewRepetition>(&make_valid_rep_json_string()).is_ok());
     }
 
     fn make_valid_rep_json_string() -> String {
@@ -77,17 +87,5 @@ mod test {
             Uuid::new_v4(),
             DateTime::<Utc>::from(std::time::SystemTime::now())
         )
-        /*let json: [String: Any] = [
-            "device_id": deviceId.uuidString,
-            "session_id": sessionId.uuidString,
-            "set_id": setId.uuidString,
-            "exercise": exercise.name,
-            "number": rep.number,
-            "rom": rep.liftingRom,
-            "velocity": rep.liftingVelocity,
-            "duration": rep.liftingMs,
-            "rep_time": Self.dateFormatter.string(from: Date()),
-            "level": level,
-        ]*/
     }
 }

@@ -1,7 +1,7 @@
 CREATE TABLE repetitions (
     id SERIAL PRIMARY KEY,
     device_id UUID NOT NULL REFERENCES users(device_id),
-    session_id UUID NOT NULL,
+    session_id UUID NOT NULL REFERENCES sessions(id),
     set_id UUID NOT NULL,
     exercise VARCHAR NOT NULL,
     number SMALLINT NOT NULL,

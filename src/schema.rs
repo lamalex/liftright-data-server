@@ -2,8 +2,8 @@ table! {
     imu_pairs (id) {
         id -> Int4,
         session_id -> Uuid,
-        acc -> Int4,
         gyro -> Int4,
+        accelerometer -> Int4,
     }
 }
 
@@ -36,6 +36,7 @@ table! {
 table! {
     sessions (id) {
         id -> Uuid,
+        device_id -> Uuid,
     }
 }
 
@@ -44,7 +45,7 @@ table! {
         id -> Int4,
         device_id -> Uuid,
         submitted -> Timestamptz,
-        survey_data -> Varchar,
+        survey_data -> Json,
     }
 }
 

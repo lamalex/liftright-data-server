@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::schema::{imu_pairs, imu_records};
-use crate::sessions::Session;
 use crate::LiftrightError;
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
@@ -17,7 +16,7 @@ pub struct ImuRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImuRecordPair {
-    pub acc: ImuRecord,
+    pub accelerometer: ImuRecord,
     pub gyro: ImuRecord,
 }
 
@@ -25,13 +24,13 @@ pub struct ImuRecordPair {
 pub struct ImuPair {
     pub id: i32,
     pub session_id: Uuid,
-    pub acc: i32,
+    pub accelerometer: i32,
     pub gyro: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImuRecordSet {
-    pub session_id: Session,
+    pub session_id: Uuid,
     pub data: Vec<ImuRecordPair>,
 }
 
