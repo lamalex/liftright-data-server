@@ -3,7 +3,7 @@ use std::env;
 
 fn main() {
     const DEFAULT_PORT: u32 = 3030;
-    const ABOUT: &'static str = "Simple data collection server for LiftRight";
+    const ABOUT: &str = "Simple data collection server for LiftRight";
 
     let opts = App::new("liftright data server")
         .version(crate_version!())
