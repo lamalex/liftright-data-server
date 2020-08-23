@@ -44,7 +44,7 @@ table! {
         id -> Int4,
         device_id -> Uuid,
         submitted -> Timestamptz,
-        survey_data -> Json,
+        survey_data -> Varchar,
     }
 }
 

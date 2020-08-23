@@ -1,31 +1,38 @@
-use uuid::Uuid;
+use chrono::{offset::Utc, DateTime};
 use diesel::prelude::*;
-use chrono::{DateTime, offset::Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+use crate::schema::{imu_pairs, imu_records};
 use crate::LiftrightError;
-//use crate::repetition::Repetition;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
 pub struct ImuRecord {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-    pub time: DateTime<Utc>
+    pub id: i32,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub date: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImuRecordPair {
     pub acc: ImuRecord,
-    pub gyro: ImuRecord
+    pub gyro: ImuRecord,
+}
+
+#[derive(Debug, Clone, Queryable, Insertable, Identifiable)]
+pub struct ImuPair {
+    pub id: i32,
+    pub session_id: Uuid,
+    pub acc: i32,
+    pub gyro: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-//#[derive(Debug, Clone, Queryable, Identifiable, Associations, Serialize, Deserialize)]
-    //#[belongs_to(Repetition, foreign_key = "set_id")]
 pub struct ImuRecordSet {
     pub set_id: Uuid,
-    pub data: Vec<ImuRecordPair>
+    pub data: Vec<ImuRecordPair>,
 }
 
 pub fn add(_conn: &PgConnection, _data: ImuRecordSet) -> Result<(), LiftrightError> {

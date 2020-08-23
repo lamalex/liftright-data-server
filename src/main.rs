@@ -105,12 +105,14 @@ mod filters {
             .and_then(handlers::submit_survey)
     }
 
-    fn add_imu_records(db: DbPool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    fn add_imu_records(
+        db: DbPool,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "add_imu_records")
-        .and(warp::put())
-        .and(json_deserialize::<ImuRecordSet>())
-        .and(with_db(db))
-        .and_then(handlers::add_imu_records)
+            .and(warp::put())
+            .and(json_deserialize::<ImuRecordSet>())
+            .and(with_db(db))
+            .and_then(handlers::add_imu_records)
     }
 
     fn json_deserialize<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
@@ -138,10 +140,10 @@ mod handlers {
     use uuid::Uuid;
     use warp::http;
 
-    use liftright_data_server::{imurecords, imurecords::ImuRecordSet};
     use liftright_data_server::repetition::{NewRepetition, Repetition};
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
+    use liftright_data_server::{imurecords, imurecords::ImuRecordSet};
     use liftright_data_server::{survey, survey::IncomingSurvey};
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
@@ -193,11 +195,11 @@ mod handlers {
 
     pub async fn add_imu_records(
         imurecords: ImuRecordSet,
-        conn: DbPooledConnection
+        conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         match imurecords::add(&conn, imurecords) {
             Ok(_) => Ok(warp::reply()),
-            Err(_) => Err(warp::reject())
+            Err(_) => Err(warp::reject()),
         }
     }
 }
