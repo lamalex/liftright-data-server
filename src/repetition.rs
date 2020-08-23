@@ -1,6 +1,6 @@
 use chrono::{offset::Utc, DateTime};
 use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::schema::repetitions;
@@ -8,25 +8,9 @@ use crate::session::Session;
 use crate::user::User;
 use crate::LiftrightError;
 
-#[derive(Debug, Clone, Queryable, Identifiable, Associations, Serialize)]
-#[belongs_to(User, foreign_key = "device_id")]
-#[belongs_to(Session, foreign_key = "id")]
-pub struct Repetition {
-    pub id: i32,
-    pub device_id: Uuid,
-    pub session_id: Uuid,
-    pub set_id: Uuid,
-    pub exercise: String,
-    pub rom: f32,
-    pub velocity: f32,
-    pub duration: f32,
-    pub rep_time: DateTime<Utc>,
-    pub level: String,
-}
-
 #[derive(Debug, Clone, Insertable, Deserialize)]
 #[table_name = "repetitions"]
-pub struct NewRepetition {
+pub struct Repetition {
     pub device_id: Uuid,
     pub session_id: Uuid,
     pub set_id: Uuid,
@@ -40,7 +24,7 @@ pub struct NewRepetition {
 }
 
 impl Repetition {
-    pub fn create(conn: &PgConnection, new_rep: NewRepetition) -> Result<usize, LiftrightError> {
+    pub fn create(conn: &PgConnection, new_rep: Repetition) -> Result<usize, LiftrightError> {
         User::get_or_make_if_new(&conn, &new_rep.device_id)?;
         Session::get_or_make_if_new(
             &conn,
@@ -63,7 +47,7 @@ mod test {
     use uuid::Uuid;
     #[test]
     fn deserialize_repetiton() {
-        assert!(serde_json::from_str::<NewRepetition>(&make_valid_rep_json_string()).is_ok());
+        assert!(serde_json::from_str::<Repetition>(&make_valid_rep_json_string()).is_ok());
     }
 
     fn make_valid_rep_json_string() -> String {

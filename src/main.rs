@@ -56,7 +56,7 @@ mod filters {
     use warp::Filter;
 
     use liftright_data_server::imurecords::ImuRecordSet;
-    use liftright_data_server::repetition::NewRepetition;
+    use liftright_data_server::repetition::Repetition;
     use liftright_data_server::survey::Survey;
     use liftright_data_server::{DbPool, DbPooledConnection};
 
@@ -81,7 +81,7 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "add_repetition")
             .and(warp::put())
-            .and(json_deserialize::<NewRepetition>())
+            .and(json_deserialize::<Repetition>())
             .and(with_db(db))
             .and_then(handlers::create_repetition)
     }
@@ -140,7 +140,7 @@ mod handlers {
     use uuid::Uuid;
     use warp::http;
 
-    use liftright_data_server::repetition::{NewRepetition, Repetition};
+    use liftright_data_server::repetition::Repetition;
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
     use liftright_data_server::imurecords::ImuRecordSet;
@@ -158,7 +158,7 @@ mod handlers {
     }
 
     pub async fn create_repetition(
-        rep: NewRepetition,
+        rep: Repetition,
         conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         match Repetition::create(&conn, rep) {
