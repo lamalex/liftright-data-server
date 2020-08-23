@@ -1,9 +1,9 @@
 table! {
-    imu_pairs (id) {
+    imu_record_pairs (id) {
         id -> Int4,
         session_id -> Uuid,
+        acc -> Int4,
         gyro -> Int4,
-        accelerometer -> Int4,
     }
 }
 
@@ -57,11 +57,11 @@ table! {
     }
 }
 
-joinable!(imu_pairs -> sessions (session_id));
+joinable!(imu_record_pairs -> sessions (session_id));
 joinable!(repetitions -> sessions (session_id));
 
 allow_tables_to_appear_in_same_query!(
-    imu_pairs,
+    imu_record_pairs,
     imu_records,
     repetitions,
     sessions,

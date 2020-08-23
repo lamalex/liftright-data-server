@@ -3,10 +3,10 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::schema::{imu_pairs, imu_records};
+use crate::schema::{imu_record_pairs, imu_records};
 use crate::LiftrightError;
 
-#[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImuRecord {
     pub x: f32,
     pub y: f32,
@@ -16,16 +16,8 @@ pub struct ImuRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImuRecordPair {
-    pub accelerometer: ImuRecord,
+    pub acc: ImuRecord,
     pub gyro: ImuRecord,
-}
-
-#[derive(Debug, Clone, Queryable, Insertable, Identifiable)]
-pub struct ImuPair {
-    pub id: i32,
-    pub session_id: Uuid,
-    pub accelerometer: i32,
-    pub gyro: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +26,15 @@ pub struct ImuRecordSet {
     pub data: Vec<ImuRecordPair>,
 }
 
-pub fn add(_conn: &PgConnection, _data: ImuRecordSet) -> Result<(), LiftrightError> {
-    Ok(())
+impl ImuRecordSet {
+    pub fn add(conn: &PgConnection, records: ImuRecordSet) -> Result<(), LiftrightError> {
+        /*records.data.iter().map(|pair| {
+            diesel::insert_into(imu_record_pairs::table)
+            .values(pair)
+            .execute(conn)
+            .map_err(LiftrightError::DatabaseError)
+        });*/
+
+        Ok(())
+    }
 }

@@ -143,7 +143,7 @@ mod handlers {
     use liftright_data_server::repetition::{NewRepetition, Repetition};
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
-    use liftright_data_server::{imurecords, imurecords::ImuRecordSet};
+    use liftright_data_server::imurecords::ImuRecordSet;
     use liftright_data_server::{survey, survey::Survey};
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
@@ -197,7 +197,7 @@ mod handlers {
         imurecords: ImuRecordSet,
         conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        match imurecords::add(&conn, imurecords) {
+        match ImuRecordSet::add(&conn, imurecords) {
             Ok(_) => Ok(warp::reply()),
             Err(_) => Err(warp::reject()),
         }

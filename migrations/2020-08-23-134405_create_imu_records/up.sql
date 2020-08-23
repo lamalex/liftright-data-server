@@ -6,9 +6,9 @@ CREATE TABLE imu_records (
     time TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE TABLE imu_pairs (
+CREATE TABLE imu_record_pairs (
     id SERIAL PRIMARY KEY,
     session_id UUID NOT NULL REFERENCES sessions(id),
-    gyro SERIAL REFERENCES imu_records(id),
-    accelerometer SERIAL REFERENCES imu_records(id)
+    acc SERIAL REFERENCES imu_records(id),
+    gyro SERIAL REFERENCES imu_records(id)
 );
