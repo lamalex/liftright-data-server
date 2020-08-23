@@ -40,3 +40,35 @@ pub fn submit(conn: &PgConnection, data: IncomingSurvey) -> Result<usize, Liftri
         .execute(conn)
         .map_err(LiftrightError::DatabaseError)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_incoming_survey() -> IncomingSurvey {
+        let mut survey_data = HashMap::<String, Option<String>>::new();
+        survey_data.insert(
+            String::from("test question"),
+            Some(String::from("omg an answer!")),
+        );
+
+        let raw_json = format!(
+            "
+            {{
+                \"device_id\": \"{}\",
+                \"survey_data\": {}  
+            }}
+            ",
+            Uuid::new_v4().to_string(),
+            serde_json::to_string(&survey_data).unwrap()
+        );
+
+        serde_json::from_str(&raw_json).unwrap()
+    }
+    #[test]
+    fn create_survey_from_incoming() {
+        let incoming = make_incoming_survey();
+        let survey = SurveyData::from(incoming);
+        assert!(&survey.survey_data[..("ERROR PARSING MAP").len()] != "ERROR PARSING MAP")
+    }
+}
