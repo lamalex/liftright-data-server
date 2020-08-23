@@ -13,7 +13,7 @@ table! {
         x -> Float4,
         y -> Float4,
         z -> Float4,
-        date -> Timestamptz,
+        time -> Timestamptz,
     }
 }
 

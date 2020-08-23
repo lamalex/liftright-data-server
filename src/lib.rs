@@ -1,5 +1,5 @@
-use std::env;
 use dotenv::dotenv;
+use std::env;
 
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool, PoolError, PooledConnection};
@@ -9,11 +9,12 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-pub mod user;
-pub mod schema;
-pub mod survey;
 pub mod imurecords;
 pub mod repetition;
+pub mod schema;
+pub mod sessions;
+pub mod survey;
+pub mod user;
 
 #[derive(Debug)]
 pub enum LiftrightError {

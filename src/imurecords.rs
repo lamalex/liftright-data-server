@@ -4,15 +4,15 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::schema::{imu_pairs, imu_records};
+use crate::sessions::Session;
 use crate::LiftrightError;
 
-#[derive(Debug, Clone, Queryable, Insertable, Identifiable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 pub struct ImuRecord {
-    pub id: i32,
     pub x: f32,
     pub y: f32,
     pub z: f32,
-    pub date: DateTime<Utc>,
+    pub time: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +31,7 @@ pub struct ImuPair {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImuRecordSet {
-    pub set_id: Uuid,
+    pub session_id: Session,
     pub data: Vec<ImuRecordPair>,
 }
 

@@ -76,7 +76,7 @@ mod tests {
                 \"survey_data\": \"\"
             }}
             ",
-            Uuid::new_v4().to_string()
+            Uuid::new_v4()
         );
 
         assert!(serde_json::from_str::<IncomingSurvey>(&raw_json).is_err())
