@@ -3,7 +3,7 @@ use std::env;
 
 fn main() {
     const DEFAULT_PORT: u32 = 3030;
-    const ABOUT: &'static str = "Simple data collection server for LiftRight";
+    const ABOUT: &str = "Simple data collection server for LiftRight";
 
     let opts = App::new("liftright data server")
         .version(crate_version!())
@@ -55,8 +55,9 @@ mod filters {
     use uuid::Uuid;
     use warp::Filter;
 
-    use liftright_data_server::repetition::NewRepetition;
-    use liftright_data_server::survey::IncomingSurvey;
+    use liftright_data_server::imurecords::ImuRecordSet;
+    use liftright_data_server::repetition::Repetition;
+    use liftright_data_server::survey::Survey;
     use liftright_data_server::{DbPool, DbPooledConnection};
 
     pub fn rest_api(
@@ -64,7 +65,8 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         repetitions_create(db.clone())
             .or(rtfb_status(db.clone()))
-            .or(survey_submit(db))
+            .or(survey_submit(db.clone()))
+            .or(add_imu_records(db))
             .or(heartbeat())
     }
 
@@ -78,8 +80,8 @@ mod filters {
         db: DbPool,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "add_repetition")
-            .and(warp::post())
-            .and(json_deserialize::<NewRepetition>())
+            .and(warp::put())
+            .and(json_deserialize::<Repetition>())
             .and(with_db(db))
             .and_then(handlers::create_repetition)
     }
@@ -98,16 +100,26 @@ mod filters {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "submit_survey")
             .and(warp::post())
-            .and(json_deserialize::<IncomingSurvey>())
+            .and(json_deserialize::<Survey>())
             .and(with_db(db))
             .and_then(handlers::submit_survey)
+    }
+
+    fn add_imu_records(
+        db: DbPool,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path!("v1" / "add_imu_records")
+            .and(warp::put())
+            .and(json_deserialize::<ImuRecordSet>())
+            .and(with_db(db))
+            .and_then(handlers::add_imu_records)
     }
 
     fn json_deserialize<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
     where
         T: serde::de::DeserializeOwned + Send,
     {
-        warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+        warp::body::content_length_limit(1024 * 1024).and(warp::body::json())
     }
 
     fn with_db(
@@ -128,10 +140,11 @@ mod handlers {
     use uuid::Uuid;
     use warp::http;
 
-    use liftright_data_server::repetition::{NewRepetition, Repetition};
+    use liftright_data_server::repetition::Repetition;
     use liftright_data_server::user::User;
     use liftright_data_server::DbPooledConnection;
-    use liftright_data_server::{survey, survey::IncomingSurvey};
+    use liftright_data_server::imurecords::ImuRecordSet;
+    use liftright_data_server::{survey, survey::Survey};
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
         let now = std::time::SystemTime::now()
@@ -145,7 +158,7 @@ mod handlers {
     }
 
     pub async fn create_repetition(
-        rep: NewRepetition,
+        rep: Repetition,
         conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         match Repetition::create(&conn, rep) {
@@ -168,7 +181,7 @@ mod handlers {
     }
 
     pub async fn submit_survey(
-        survey_data: IncomingSurvey,
+        survey_data: Survey,
         conn: DbPooledConnection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         match survey::submit(&conn, survey_data) {
@@ -176,6 +189,16 @@ mod handlers {
                 "thanks",
                 http::StatusCode::CREATED,
             )),
+            Err(_) => Err(warp::reject()),
+        }
+    }
+
+    pub async fn add_imu_records(
+        imurecords: ImuRecordSet,
+        conn: DbPooledConnection,
+    ) -> Result<impl warp::Reply, warp::Rejection> {
+        match ImuRecordSet::add(&conn, imurecords) {
+            Ok(_) => Ok(warp::reply()),
             Err(_) => Err(warp::reject()),
         }
     }

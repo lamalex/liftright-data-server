@@ -1,17 +1,20 @@
-use uuid::Uuid;
-use diesel::{prelude::*, insert_into};
 use crate::schema::users;
 use crate::LiftrightError;
+use diesel::{insert_into, prelude::*};
+use uuid::Uuid;
 
 #[derive(Queryable, Identifiable, Debug, PartialEq)]
 pub struct User {
     pub id: i32,
     pub device_id: Uuid,
-    pub rtfb: bool
+    pub rtfb: bool,
 }
 
 impl User {
-    pub fn get_or_make_if_new(conn: &PgConnection, device_id: &Uuid) -> Result<User, LiftrightError> {
+    pub fn get_or_make_if_new(
+        conn: &PgConnection,
+        device_id: &Uuid,
+    ) -> Result<User, LiftrightError> {
         match Self::find_user(conn, device_id)? {
             Some(user) => Ok(user),
             None => {
@@ -38,13 +41,14 @@ impl User {
         Ok(user)
     }
 
-    pub fn check_rtfb_status(conn: &PgConnection, device_id: &Uuid) -> Result<bool, LiftrightError> {
-        let status = users::table
+    pub fn check_rtfb_status(
+        conn: &PgConnection,
+        device_id: &Uuid,
+    ) -> Result<bool, LiftrightError> {
+        users::table
             .select(users::columns::rtfb)
             .filter(users::device_id.eq(device_id))
             .first::<bool>(conn)
-            .map_err(LiftrightError::DatabaseError)?;
-
-        Ok(status)
+            .map_err(LiftrightError::DatabaseError)
     }
 }
