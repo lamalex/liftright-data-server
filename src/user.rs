@@ -1,54 +1,59 @@
-use crate::schema::users;
-use crate::LiftrightError;
-use diesel::{insert_into, prelude::*};
+use mongodb::{bson, options::FindOneOptions, Collection};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Queryable, Identifiable, Debug, PartialEq)]
+use crate::{session::Session, LiftrightError};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+struct RtfbStatusQuery {
+    device_id: Uuid,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+struct RtfbStatusResult {
+    rtfb_status: bool,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct User {
-    pub id: i32,
     pub device_id: Uuid,
     pub rtfb: bool,
+    pub sessions: Vec<Session>,
 }
 
 impl User {
     pub fn get_or_make_if_new(
-        conn: &PgConnection,
-        device_id: &Uuid,
+        _collection: Collection,
+        _device_id: &Uuid,
     ) -> Result<User, LiftrightError> {
-        match Self::find_user(conn, device_id)? {
-            Some(user) => Ok(user),
-            None => {
-                Self::register_user(conn, device_id)?;
-                Self::get_or_make_if_new(conn, device_id)
-            }
-        }
+        Err(LiftrightError::UnimplementedError)
     }
 
-    fn register_user(conn: &PgConnection, device_id: &Uuid) -> Result<usize, LiftrightError> {
-        insert_into(users::table)
-            .values(users::device_id.eq(device_id))
-            .execute(conn)
-            .map_err(LiftrightError::DatabaseError)
-    }
-
-    fn find_user(conn: &PgConnection, device_id: &Uuid) -> Result<Option<User>, LiftrightError> {
-        let user = users::table
-            .filter(users::device_id.eq(device_id))
-            .first::<User>(conn)
-            .optional()
-            .map_err(LiftrightError::DatabaseError)?;
-
-        Ok(user)
-    }
-
-    pub fn check_rtfb_status(
-        conn: &PgConnection,
-        device_id: &Uuid,
+    pub async fn check_rtfb_status(
+        collection: Collection,
+        device_id: Uuid,
     ) -> Result<bool, LiftrightError> {
-        users::table
-            .select(users::columns::rtfb)
-            .filter(users::device_id.eq(device_id))
-            .first::<bool>(conn)
-            .map_err(LiftrightError::DatabaseError)
+        let filter = bson::to_document(&RtfbStatusQuery { device_id })
+            .map_err(LiftrightError::DbSerializationError)?;
+
+        let _rtfb_status_projection = FindOneOptions::builder()
+            .projection(Some(bson::doc! {
+                "rtfb_status": 1
+            }))
+            .build();
+
+        let doc = collection
+            .find_one(filter, None)
+            .await
+            .map_err(LiftrightError::DbError)?;
+
+        match doc {
+            Some(doc) => {
+                let result: RtfbStatusResult =
+                    bson::from_document(doc).map_err(LiftrightError::DbDeserializationError)?;
+                Ok(result.rtfb_status)
+            }
+            None => Ok(false),
+        }
     }
 }

@@ -1,24 +1,22 @@
 use chrono::{offset::Utc, DateTime};
-use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::schema::survey_results;
 use crate::LiftrightError;
 
-#[derive(Debug, Deserialize, Insertable, Serialize)]
-#[table_name = "survey_results"]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Survey {
-    pub device_id: Uuid,
     pub submitted: Option<DateTime<Utc>>,
-    pub survey_data: serde_json::Value,
+    pub survey_data: Vec<SurveyData>,
 }
 
-pub fn submit(conn: &PgConnection, data: Survey) -> Result<usize, LiftrightError> {
-    diesel::insert_into(survey_results::table)
-        .values(data)
-        .execute(conn)
-        .map_err(LiftrightError::DatabaseError)
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SurveyData {
+    pub question: String,
+    pub answer: String,
+}
+
+pub fn submit(_collection: mongodb::Collection, _data: Survey) -> Result<usize, LiftrightError> {
+    Err(LiftrightError::UnimplementedError)
 }
 
 #[cfg(test)]
