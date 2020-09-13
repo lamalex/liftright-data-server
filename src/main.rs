@@ -59,7 +59,7 @@ mod filters {
     use warp::Filter;
 
     use liftright_data_server::{
-        imurecords::ImuRecordSet, repetition::JsonApiRepetition, survey::Survey,
+        imurecords::JsonImuRecordSet, repetition::JsonApiRepetition, survey::Survey,
     };
 
     pub fn rest_api(
@@ -103,7 +103,7 @@ mod filters {
         warp::path!("v1" / "add_imu_records")
             .and(warp::put())
             .and(with_db(db))
-            .and(json_deserialize::<ImuRecordSet>())
+            .and(json_deserialize::<JsonImuRecordSet>())
             .and_then(handlers::add_imu_records)
     }
 
@@ -145,7 +145,7 @@ mod handlers {
     use warp::http;
 
     use liftright_data_server::{
-        imurecords::ImuRecordSet,
+        imurecords::JsonImuRecordSet,
         repetition::JsonApiRepetition,
         survey::Survey,
         user::{ExtractUser, User},
@@ -200,7 +200,7 @@ mod handlers {
 
     pub async fn add_imu_records(
         collection: mongodb::Collection,
-        imurecords: ImuRecordSet,
+        imurecords: JsonImuRecordSet,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         let user = imurecords.extract_user();
 

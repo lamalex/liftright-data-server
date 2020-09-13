@@ -4,7 +4,7 @@ use std::convert::TryInto;
 use uuid::Uuid;
 
 use crate::{
-    imurecords::ImuRecordSet,
+    imurecords::{ImuDataUpdate, JsonImuRecordSet},
     repetition::{JsonApiRepetition, RepetitionUpdate},
     userquery::UserQuery,
     LiftrightError,
@@ -90,9 +90,21 @@ impl User {
 
     pub async fn add_imu_records(
         self,
-        _collection: Collection,
-        _imurecords: ImuRecordSet,
+        collection: Collection,
+        imurecords: JsonImuRecordSet,
     ) -> Result<i64, LiftrightError> {
-        Err(LiftrightError::UnimplementedError)
+        let query = self.try_into()?;
+
+        let update_options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
+
+        let updated_res = collection.update_one(
+            query,
+            bson::doc! { "$push": { "imu_data": bson::to_bson(&ImuDataUpdate::from(imurecords)).unwrap() } },
+            update_options,
+        ).await.map_err(LiftrightError::DbError)?;
+
+        Ok(updated_res.modified_count)
     }
 }
