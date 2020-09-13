@@ -1,8 +1,9 @@
+use crate::user::{ExtractUser, User};
+use lrds_derive::ExtractUser;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{user::User};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, ExtractUser)]
 pub struct JsonApiRepetition {
     device_id: Uuid,
     session_id: Uuid,
@@ -13,12 +14,6 @@ pub struct JsonApiRepetition {
     rom: f64,
     duration: f64,
     time: i64,
-}
-
-impl JsonApiRepetition {
-    pub fn extract_user(&self) -> User {
-        User::new(self.device_id)
-    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

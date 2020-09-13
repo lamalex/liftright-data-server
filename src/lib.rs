@@ -23,48 +23,44 @@ impl Reject for LiftrightError {}
 /// Establishes a connection to mongo db.
 /// Records are stored as a tree in the form
 /// {
-///     device_id: Uuid,
-///     rtfb: bool,
-///     sessions: [
-///         {
-///             session_id: Uuid,
-///             level: String
-///             sets: [
-///                 {
-///                     set_id: Uuid,
-///                     exercise: String
-///                     repetitions: [
-///                         {
-///                             number: Int32,
-///                             rom: Double,
-///                             velocity: Double,
-///                             duration: Double,
-///                             rep_time: Int64,
-///                         },
-///                         ...,
-///                     ]
+/// "_id" : ObjectId,
+/// "device_id" : Uuid,
+/// "rtfb_status": bool,
+///	"repetitions" : [
+///		{
+///			"session_id" : Uuid,
+///			"set_id" : Uuid,
+///			"level" : String,
+///			"exercise" : String,
+///			"number" : i32,
+///			"rom" : f64,
+///			"duration" : f64,
+///			"time" : i64
+///		},
+///     ...,
+/// "imu_data": [
+///     {
+///         "session_id": Uuid,
+///         "data": [
+///             {
+///                 "acc" : {
+///                     "y" : f64,
+///                     "z" : f64,
+///                     "x" : f64,
+///                     "time" : i64,
 ///                 },
-///                 ...,
-///             ],
-///             imu_records: [
-///                 {
-///                     acc: [{ x: Double, y: Double, z: Double, time: Int64 }, ..., ]
-///                     gyro: [{ x: Double, y: Double, z: Double, time: Int64 }, ...,]
-///                 },
-///                 ...,
-///             ]
-///         },
-///         ...
-///     ],
-///     surveys: [
-///         {
-///             submitted: DateTime<Utc>,
-///             data: [
-///                 { question: String, answer: String },
-///                 ...
-///             ]
-///         }
-///     ]
+///                 "gyro" : {
+///                     "y" : f64,
+///                     "z" : f64,
+///                     "x" : f64,
+///                     "time" : i64,
+///                 }
+///             },
+///             ...,
+///         ]
+///     },
+///     ...,
+/// ]
 /// }
 pub async fn establish_db_connection() -> Result<Collection, LiftrightError> {
     dotenv().ok();

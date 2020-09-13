@@ -19,3 +19,4 @@ log = "0.4"
 pretty_env_logger = "0.4"
 mongodb = "1.1.1"
 juniper = "0.14.2"
+lrds_derive = { path = "./lrds_derive" }

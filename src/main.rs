@@ -59,7 +59,7 @@ mod filters {
     use warp::Filter;
 
     use liftright_data_server::{
-        imurecords::ImuRecordPair, repetition::JsonApiRepetition, survey::Survey,
+        imurecords::ImuRecordSet, repetition::JsonApiRepetition, survey::Survey,
     };
 
     pub fn rest_api(
@@ -97,6 +97,16 @@ mod filters {
             .and_then(handlers::add_repetition)
     }
 
+    fn add_imu_records(
+        db: mongodb::Collection,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path!("v1" / "add_imu_records")
+            .and(warp::put())
+            .and(with_db(db))
+            .and(json_deserialize::<ImuRecordSet>())
+            .and_then(handlers::add_imu_records)
+    }
+
     fn survey_submit(
         db: mongodb::Collection,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -105,16 +115,6 @@ mod filters {
             .and(with_db(db))
             .and(json_deserialize::<Survey>())
             .and_then(handlers::submit_survey)
-    }
-
-    fn add_imu_records(
-        db: mongodb::Collection,
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        warp::path!("v1" / "add_imu_records")
-            .and(warp::put())
-            .and(with_db(db))
-            .and(json_deserialize::<Vec<ImuRecordPair>>())
-            .and_then(handlers::add_imu_records)
     }
 
     fn json_deserialize<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
@@ -143,10 +143,13 @@ mod filters {
 mod handlers {
     use uuid::Uuid;
     use warp::http;
-    
+
     use liftright_data_server::{
+        imurecords::ImuRecordSet,
+        repetition::JsonApiRepetition,
+        survey::Survey,
+        user::{ExtractUser, User},
         LiftrightError,
-        imurecords::ImuRecordPair, repetition::JsonApiRepetition, survey::Survey, user::User,
     };
 
     #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -155,8 +158,8 @@ mod handlers {
     }
 
     #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
-    struct AddRepetitionJsonReply {
-        updated_count: i64
+    struct RecordsUpdatedJsonReply {
+        updated_count: i64,
     }
 
     pub async fn heartbeat() -> Result<impl warp::Reply, warp::Rejection> {
@@ -188,26 +191,25 @@ mod handlers {
         let user = rep.extract_user();
 
         match user.add_repetition(collection, rep).await {
-            Ok(updated_count) => Ok(warp::reply::json(&AddRepetitionJsonReply { updated_count })),
+            Ok(updated_count) => Ok(warp::reply::json(&RecordsUpdatedJsonReply {
+                updated_count,
+            })),
             Err(e) => Err(warp::reject::custom(e)),
         }
     }
 
     pub async fn add_imu_records(
-        _collection: mongodb::Collection,
-        _imurecords: Vec<ImuRecordPair>,
+        collection: mongodb::Collection,
+        imurecords: ImuRecordSet,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        if true {
-            Err(warp::reject::custom(LiftrightError::UnimplementedError))
-        } else {
-            Ok(warp::reply())
+        let user = imurecords.extract_user();
+
+        match user.add_imu_records(collection, imurecords).await {
+            Ok(updated_count) => Ok(warp::reply::json(&RecordsUpdatedJsonReply {
+                updated_count,
+            })),
+            Err(e) => Err(warp::reject::custom(e)),
         }
-        /*
-        match ImuRecordSet::add(&conn, imurecords) {
-            Ok(_) => Ok(warp::reply()),
-            Err(_) => Err(warp::reject()),
-        }
-        */
     }
 
     pub async fn submit_survey(

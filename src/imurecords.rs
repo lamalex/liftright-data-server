@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+use crate::user::{ExtractUser, User};
+use lrds_derive::ExtractUser;
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, ExtractUser)]
+pub struct ImuRecordSet {
+    device_id: Uuid,
+    data: Vec<ImuRecordPair>,
+}
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ImuRecordPair {
     pub acc: ImuRecord,

@@ -1,5 +1,5 @@
 use mongodb::bson;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use uuid::Uuid;
 
@@ -12,9 +12,7 @@ pub struct UserQuery {
 
 impl UserQuery {
     pub fn new(device_id: Uuid) -> Self {
-        Self {
-            device_id
-        }
+        Self { device_id }
     }
 }
 
