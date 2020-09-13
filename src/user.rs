@@ -44,6 +44,41 @@ impl User {
         User { device_id }
     }
 
+    async fn append_to_list<S: Serialize + From<I>, I>(
+        self,
+        collection: Collection,
+        source: I,
+        field_name: &str,
+    ) -> Result<i64, LiftrightError> {
+        let new_records =
+            bson::to_bson(&S::from(source)).map_err(LiftrightError::DbSerializationError)?;
+
+        self.update_user_record(
+            collection,
+            bson::doc! { "$push": { field_name: new_records } },
+        )
+        .await
+    }
+
+    async fn update_user_record(
+        self,
+        collection: Collection,
+        document: bson::Document,
+    ) -> Result<i64, LiftrightError> {
+        let query = self.try_into()?;
+
+        let update_options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
+
+        let updated_res = collection
+            .update_one(query, document, update_options)
+            .await
+            .map_err(LiftrightError::DbError)?;
+
+        Ok(updated_res.modified_count)
+    }
+
     pub async fn check_rtfb_status(self, collection: Collection) -> Result<bool, LiftrightError> {
         let filter: bson::Document = self.try_into()?;
 
@@ -73,19 +108,13 @@ impl User {
         collection: Collection,
         repetition: JsonApiRepetition,
     ) -> Result<i64, LiftrightError> {
-        let query = self.try_into()?;
-
-        let update_options = mongodb::options::UpdateOptions::builder()
-            .upsert(true)
-            .build();
-
-        let updated_res = collection.update_one(
-            query,
-            bson::doc! { "$push": { "repetitions": bson::to_bson(&RepetitionUpdate::from(repetition)).unwrap() } },
-            update_options,
-        ).await.map_err(LiftrightError::DbError)?;
-
-        Ok(updated_res.modified_count)
+        let new_records = bson::to_bson(&RepetitionUpdate::from(repetition))
+            .map_err(LiftrightError::DbSerializationError)?;
+        self.update_user_record(
+            collection,
+            bson::doc! { "$push": { "repetitions": new_records } },
+        )
+        .await
     }
 
     pub async fn add_imu_records(
@@ -93,18 +122,7 @@ impl User {
         collection: Collection,
         imurecords: JsonImuRecordSet,
     ) -> Result<i64, LiftrightError> {
-        let query = self.try_into()?;
-
-        let update_options = mongodb::options::UpdateOptions::builder()
-            .upsert(true)
-            .build();
-
-        let updated_res = collection.update_one(
-            query,
-            bson::doc! { "$push": { "imu_data": bson::to_bson(&ImuDataUpdate::from(imurecords)).unwrap() } },
-            update_options,
-        ).await.map_err(LiftrightError::DbError)?;
-
-        Ok(updated_res.modified_count)
+        self.append_to_list::<ImuDataUpdate, _>(collection, imurecords, "imu_data")
+            .await
     }
 }

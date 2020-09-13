@@ -21,7 +21,7 @@ pub struct ImuRecord {
     pub x: f64,
     pub y: f64,
     pub z: f64,
-    pub time: f64,
+    pub time: i64,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
