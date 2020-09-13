@@ -12,7 +12,7 @@ pub struct Survey {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SurveyData {
     pub question: String,
-    pub answer: String,
+    pub answer: Option<String>,
 }
 
 pub fn submit(_collection: mongodb::Collection, _data: Survey) -> Result<usize, LiftrightError> {
@@ -23,6 +23,7 @@ pub fn submit(_collection: mongodb::Collection, _data: Survey) -> Result<usize, 
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use uuid::Uuid;
 
     #[test]
     fn deserialize_survey() {

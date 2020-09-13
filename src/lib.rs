@@ -5,15 +5,14 @@ use warp::reject::Reject;
 
 pub mod imurecords;
 pub mod repetition;
-pub mod session;
-pub mod set;
 pub mod survey;
 pub mod user;
+pub mod userquery;
 
 #[derive(Debug)]
 pub enum LiftrightError {
     UnimplementedError,
-    JsonSerializationError,
+    ConversionError,
     DbError(mongodb::error::Error),
     DbSerializationError(mongodb::bson::ser::Error),
     DbDeserializationError(mongodb::bson::de::Error),

@@ -1,13 +1,9 @@
 use mongodb::{bson, options::FindOneOptions, Collection};
 use serde::{Deserialize, Serialize};
+use std::convert::TryInto;
 use uuid::Uuid;
 
-use crate::{session::Session, LiftrightError};
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-struct RtfbStatusQuery {
-    device_id: Uuid,
-}
+use crate::{repetition::{JsonApiRepetition, RepetitionUpdate}, userquery::UserQuery, LiftrightError};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 struct RtfbStatusResult {
@@ -16,34 +12,45 @@ struct RtfbStatusResult {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct User {
-    pub device_id: Uuid,
-    pub rtfb: bool,
-    pub sessions: Vec<Session>,
+    device_id: Uuid
+}
+
+impl Into<UserQuery> for User {
+    fn into(self) -> UserQuery {
+        UserQuery::new(self.device_id)
+    }
+}
+
+impl TryInto<bson::Document> for User {
+    type Error = LiftrightError;
+
+    fn try_into(self) -> Result<bson::Document, Self::Error> {
+        let intermediate: UserQuery = self.into();
+        intermediate.try_into()
+    }
 }
 
 impl User {
-    pub fn get_or_make_if_new(
-        _collection: Collection,
-        _device_id: &Uuid,
-    ) -> Result<User, LiftrightError> {
-        Err(LiftrightError::UnimplementedError)
+    pub fn new(device_id: Uuid) -> Self {
+        User {
+            device_id
+        }
     }
 
     pub async fn check_rtfb_status(
+        self,
         collection: Collection,
-        device_id: Uuid,
     ) -> Result<bool, LiftrightError> {
-        let filter = bson::to_document(&RtfbStatusQuery { device_id })
-            .map_err(LiftrightError::DbSerializationError)?;
-
-        let _rtfb_status_projection = FindOneOptions::builder()
+        let filter: bson::Document = self.try_into()?;
+        
+        let rtfb_status_projection = FindOneOptions::builder()
             .projection(Some(bson::doc! {
                 "rtfb_status": 1
             }))
             .build();
 
         let doc = collection
-            .find_one(filter, None)
+            .find_one(filter, rtfb_status_projection)
             .await
             .map_err(LiftrightError::DbError)?;
 
@@ -55,5 +62,22 @@ impl User {
             }
             None => Ok(false),
         }
+    }
+
+    pub async fn add_repetition(self, collection: Collection, repetition: JsonApiRepetition) -> Result<i64, LiftrightError> {
+        let xuery: UserQuery = self.into();
+        let query: bson::Document = xuery.try_into()?;
+    
+        let update_options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
+    
+        let updated_res = collection.update_one(
+            query,
+            bson::doc! { "$push": { "repetitions": bson::to_bson(&RepetitionUpdate::from(repetition)).unwrap() } },
+            update_options,
+        ).await.map_err(LiftrightError::DbError)?;
+    
+        Ok(updated_res.modified_count)
     }
 }
