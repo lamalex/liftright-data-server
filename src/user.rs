@@ -1,41 +1,34 @@
-use mongodb::{bson, options::FindOneOptions, Collection};
+use crate::{LrdsError, LrdsResult};
+use mongodb;
+use mongodb::bson;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
+use std::convert::TryFrom;
 use uuid::Uuid;
 
-use crate::{
-    imurecords::{ImuDataUpdate, JsonImuRecordSet},
-    repetition::{JsonApiRepetition, RepetitionUpdate},
-    userquery::UserQuery,
-    LiftrightError,
-};
-
-pub trait ExtractUser {
-    fn extract_user(&self) -> User;
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-struct RtfbStatusResult {
-    rtfb_status: bool,
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub struct User {
     device_id: Uuid,
 }
 
-impl Into<UserQuery> for User {
-    fn into(self) -> UserQuery {
-        UserQuery::new(self.device_id)
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+struct RtfbStatusFilter {
+    device_id: Uuid,
+    rtfb_status: bool,
+}
+
+impl From<User> for RtfbStatusFilter {
+    fn from(user: User) -> Self {
+        RtfbStatusFilter {
+            device_id: user.device_id,
+            rtfb_status: true,
+        }
     }
 }
 
-impl TryInto<bson::Document> for User {
-    type Error = LiftrightError;
-
-    fn try_into(self) -> Result<bson::Document, Self::Error> {
-        let intermediate: UserQuery = self.into();
-        intermediate.try_into()
+impl TryFrom<User> for bson::Document {
+    type Error = LrdsError;
+    fn try_from(user: User) -> LrdsResult<Self> {
+        bson::to_document(&RtfbStatusFilter::from(user)).map_err(LrdsError::DbSerializationError)
     }
 }
 
@@ -44,85 +37,24 @@ impl User {
         User { device_id }
     }
 
-    async fn append_to_list<S: Serialize + From<I>, I>(
-        self,
-        collection: Collection,
-        source: I,
-        field_name: &str,
-    ) -> Result<i64, LiftrightError> {
-        let new_records =
-            bson::to_bson(&S::from(source)).map_err(LiftrightError::DbSerializationError)?;
-
-        self.update_user_record(
-            collection,
-            bson::doc! { "$push": { field_name: new_records } },
-        )
-        .await
-    }
-
-    async fn update_user_record(
-        self,
-        collection: Collection,
-        document: bson::Document,
-    ) -> Result<i64, LiftrightError> {
-        let query = self.try_into()?;
-
-        let update_options = mongodb::options::UpdateOptions::builder()
-            .upsert(true)
-            .build();
-
-        let updated_res = collection
-            .update_one(query, document, update_options)
+    pub async fn check_rtfb_status(self, collection: mongodb::Collection) -> LrdsResult<bool> {
+        let filter = bson::Document::try_from(self)?;
+        Ok(collection
+            .find_one(filter, None)
             .await
-            .map_err(LiftrightError::DbError)?;
-
-        Ok(updated_res.modified_count)
-    }
-
-    pub async fn check_rtfb_status(self, collection: Collection) -> Result<bool, LiftrightError> {
-        let filter: bson::Document = self.try_into()?;
-
-        let rtfb_status_projection = FindOneOptions::builder()
-            .projection(Some(bson::doc! {
-                "rtfb_status": 1
-            }))
-            .build();
-
-        let doc = collection
-            .find_one(filter, rtfb_status_projection)
-            .await
-            .map_err(LiftrightError::DbError)?;
-
-        match doc {
-            Some(doc) => {
-                let result: RtfbStatusResult =
-                    bson::from_document(doc).map_err(LiftrightError::DbDeserializationError)?;
-                Ok(result.rtfb_status)
-            }
-            None => Ok(false),
-        }
-    }
-
-    pub async fn add_repetition(
-        self,
-        collection: Collection,
-        repetition: JsonApiRepetition,
-    ) -> Result<i64, LiftrightError> {
-        let new_records = bson::to_bson(&RepetitionUpdate::from(repetition))
-            .map_err(LiftrightError::DbSerializationError)?;
-        self.update_user_record(
-            collection,
-            bson::doc! { "$push": { "repetitions": new_records } },
-        )
-        .await
-    }
-
-    pub async fn add_imu_records(
-        self,
-        collection: Collection,
-        imurecords: JsonImuRecordSet,
-    ) -> Result<i64, LiftrightError> {
-        self.append_to_list::<ImuDataUpdate, _>(collection, imurecords, "imu_data")
-            .await
+            .map_err(LrdsError::DbError)?
+            .is_some())
     }
 }
+
+/*
+
+    pub async fn submit_survey(
+        self,
+        collection: Collection,
+        survey_data: JsonSurvey,
+    ) -> Result<i64, LiftrightError> {
+        self.append_to_list::<SurveyUpdate, _>(collection, survey_data, "surveys").await
+    }
+}
+*/

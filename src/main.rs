@@ -3,7 +3,7 @@ use std::env;
 
 fn main() {
     const DEFAULT_PORT: u32 = 3030;
-    const ABOUT: &str = "Simple data collection server for LiftRight";
+    const ABOUT: &str = "Data collection server for LiftRight";
 
     let opts = App::new("liftright data server")
         .version(crate_version!())
@@ -37,10 +37,10 @@ mod webserver {
     use std::net::SocketAddrV4;
     use warp::Filter;
 
-    use liftright_data_server::LiftrightError;
+    use liftright_data_server::LrdsError;
 
     #[tokio::main]
-    pub async fn run(port: u32) -> Result<(), LiftrightError> {
+    pub async fn run(port: u32) -> Result<(), LrdsError> {
         let db = liftright_data_server::establish_db_connection().await?;
 
         let api = filters::rest_api(db).with(warp::log("liftright_data_server"));
@@ -58,8 +58,8 @@ mod filters {
     use uuid::Uuid;
     use warp::Filter;
 
-    use liftright_data_server::{
-        imurecords::JsonImuRecordSet, repetition::JsonApiRepetition, survey::Survey,
+    use liftright_data_server::json_api::{
+        AddImuDataPayload, AddRepetitionPayload, AddSurveyPayload,
     };
 
     pub fn rest_api(
@@ -93,7 +93,7 @@ mod filters {
         warp::path!("v1" / "add_repetition")
             .and(warp::put())
             .and(with_db(db))
-            .and(json_deserialize::<JsonApiRepetition>())
+            .and(json_deserialize::<AddRepetitionPayload>())
             .and_then(handlers::add_repetition)
     }
 
@@ -103,7 +103,7 @@ mod filters {
         warp::path!("v1" / "add_imu_records")
             .and(warp::put())
             .and(with_db(db))
-            .and(json_deserialize::<JsonImuRecordSet>())
+            .and(json_deserialize::<AddImuDataPayload>())
             .and_then(handlers::add_imu_records)
     }
 
@@ -113,7 +113,7 @@ mod filters {
         warp::path!("v1" / "submit_survey")
             .and(warp::post())
             .and(with_db(db))
-            .and(json_deserialize::<Survey>())
+            .and(json_deserialize::<AddSurveyPayload>())
             .and_then(handlers::submit_survey)
     }
 
@@ -145,11 +145,8 @@ mod handlers {
     use warp::http;
 
     use liftright_data_server::{
-        imurecords::JsonImuRecordSet,
-        repetition::JsonApiRepetition,
-        survey::Survey,
-        user::{ExtractUser, User},
-        LiftrightError,
+        json_api::{AddImuDataPayload, AddRepetitionPayload, AddSurveyPayload},
+        user::User,
     };
 
     #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -178,6 +175,7 @@ mod handlers {
         collection: mongodb::Collection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         let user = User::new(device_id);
+
         match user.check_rtfb_status(collection).await {
             Ok(rtfb_status) => Ok(warp::reply::json(&RtfbJsonReply { rtfb_status })),
             Err(e) => Err(warp::reject::custom(e)),
@@ -186,40 +184,40 @@ mod handlers {
 
     pub async fn add_repetition(
         collection: mongodb::Collection,
-        rep: JsonApiRepetition,
+        payload: AddRepetitionPayload,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        let user = rep.extract_user();
-
-        match user.add_repetition(collection, rep).await {
-            Ok(updated_count) => Ok(warp::reply::json(&RecordsUpdatedJsonReply {
-                updated_count,
-            })),
+        match payload
+            .set
+            .add_repetition(collection, payload.repetition)
+            .await
+        {
+            Ok(_) => Ok(warp::reply()),
             Err(e) => Err(warp::reject::custom(e)),
         }
     }
 
     pub async fn add_imu_records(
         collection: mongodb::Collection,
-        imurecords: JsonImuRecordSet,
+        imurecords: AddImuDataPayload,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        let user = imurecords.extract_user();
-
-        match user.add_imu_records(collection, imurecords).await {
-            Ok(updated_count) => Ok(warp::reply::json(&RecordsUpdatedJsonReply {
-                updated_count,
-            })),
+        match imurecords.data.insert(collection).await {
+            Ok(_) => Ok(warp::reply()),
             Err(e) => Err(warp::reject::custom(e)),
         }
     }
 
     pub async fn submit_survey(
-        _collection: mongodb::Collection,
-        _survey_data: Survey,
+        collection: mongodb::Collection,
+        survey_data: AddSurveyPayload,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        if true {
-            Err(warp::reject::custom(LiftrightError::UnimplementedError))
-        } else {
-            Ok(warp::reply())
+        /*
+        let user = survey_data.extract_user();
+
+        match user.submit_survey(collection, survey_data).await {
+            Ok(_) => Ok(warp::reply()),
+            Err(e) => Err(warp::reject::custom(e)),
         }
+        */
+        Ok(warp::reply())
     }
 }
