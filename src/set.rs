@@ -4,39 +4,17 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 use crate::{
-    repetition::Repetition, session::Session, traits::IdBucketPattern, LrdsError, LrdsResult,
+    query_selector::SetQuery, repetition::Repetition, session::Session, LrdsError, LrdsResult,
 };
 use uuid::Uuid;
 
-const BUCKET_REP_LIMIT: i32 = 1000;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Set {
     #[serde(flatten)]
-    session: Session,
-    set_id: Uuid,
+    pub session: Session,
+    pub set_id: Uuid,
     level: String,
     exercise: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct SetQuery {
-    id: bson::Bson,
-    device_id: Uuid,
-    session_id: Uuid,
-    set_id: Uuid,
-    rep_count: bson::Bson,
-}
-
-impl From<&Set> for SetQuery {
-    fn from(set: &Set) -> Self {
-        SetQuery {
-            id: bson::Bson::to_bucket_selector(set.session.device_id),
-            device_id: set.session.device_id,
-            session_id: set.session.session_id,
-            set_id: set.set_id,
-            rep_count: bson::bson!({ "$lt": BUCKET_REP_LIMIT }),
-        }
-    }
 }
 
 impl TryFrom<&Set> for bson::Document {
@@ -62,7 +40,7 @@ impl Set {
         collection
             .update_one(query, update, options)
             .await
-            .map_err(LrdsError::DbError)?;
-        Ok(())
+            .map_err(LrdsError::DbError)
+            .map(|_| ())
     }
 }
