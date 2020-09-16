@@ -1,38 +1,57 @@
+use crate::{
+    query_selector::{SurveyFilter, SurveyUpdate},
+    LrdsError, LrdsResult,
+};
+use chrono::{DateTime, Utc};
+use mongodb;
+use mongodb::bson;
 use serde::{Deserialize, Serialize};
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SurveyData {
-    pub question: String,
-    pub answer: Option<String>,
-}
-/*use chrono::{offset::Utc, DateTime};
-use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use uuid::Uuid;
-use crate::traits::ExtractUser;
-use crate::json_api::JsonSurvey;
-use crate::user::User;
-use lrds_derive::ExtractUser;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SurveyData {
+pub struct Survey {
+    pub device_id: Uuid,
+    #[serde(default = "chrono::Utc::now")]
+    pub submitted: DateTime<Utc>,
+    #[serde(rename = "survey_data")]
+    pub data: Vec<SurveyResponse>,
+}
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SurveyResponse {
     pub question: String,
     pub answer: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SurveyUpdate {
-    pub submitted: DateTime<Utc>,
-    pub survey_data: Vec<SurveyData>,
+enum Selector<'a> {
+    Query(&'a Survey),
+    Update(&'a Survey),
 }
 
-impl From<JsonSurvey> for SurveyUpdate {
-    fn from(value: JsonSurvey) -> Self {
-        Self {
-            submitted: match value.submitted {
-                Some(submitted) => submitted,
-                None => Utc::now()
-            },
-            survey_data: value.survey_data
+impl<'a> TryFrom<Selector<'a>> for bson::Document {
+    type Error = LrdsError;
+    fn try_from(var: Selector) -> LrdsResult<bson::Document> {
+        use Selector::*;
+        match var {
+            Query(survey) => bson::to_document(&SurveyFilter::from(survey))
+                .map_err(LrdsError::DbSerializationError),
+            Update(survey) => bson::Document::try_from(&SurveyUpdate::from(survey)),
         }
     }
 }
-*/
+
+impl Survey {
+    pub async fn insert(self, collection: mongodb::Collection) -> LrdsResult<()> {
+        let query = bson::Document::try_from(Selector::Query(&self))?;
+        let update = bson::Document::try_from(Selector::Update(&self))?;
+        let options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
+
+        collection
+            .update_one(query, update, options)
+            .await
+            .map_err(LrdsError::DbError)
+            .map(|_| ())
+    }
+}

@@ -46,15 +46,3 @@ impl User {
             .is_some())
     }
 }
-
-/*
-
-    pub async fn submit_survey(
-        self,
-        collection: Collection,
-        survey_data: JsonSurvey,
-    ) -> Result<i64, LiftrightError> {
-        self.append_to_list::<SurveyUpdate, _>(collection, survey_data, "surveys").await
-    }
-}
-*/

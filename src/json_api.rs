@@ -1,8 +1,6 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::{imurecords::ImuRecordSet, repetition::Repetition, set::Set, survey::SurveyData};
+use crate::{imurecords::ImuRecordSet, repetition::Repetition, set::Set, survey::Survey};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddImuDataPayload {
@@ -18,9 +16,4 @@ pub struct AddRepetitionPayload {
     pub repetition: Repetition,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AddSurveyPayload {
-    pub device_id: Uuid,
-    pub submitted: Option<DateTime<Utc>>,
-    pub survey_data: Vec<SurveyData>,
-}
+pub type AddSurveyPayload = Survey;

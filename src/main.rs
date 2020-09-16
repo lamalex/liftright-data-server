@@ -175,49 +175,43 @@ mod handlers {
         collection: mongodb::Collection,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         let user = User::new(device_id);
-
-        match user.check_rtfb_status(collection).await {
-            Ok(rtfb_status) => Ok(warp::reply::json(&RtfbJsonReply { rtfb_status })),
-            Err(e) => Err(warp::reject::custom(e)),
-        }
+        user.check_rtfb_status(collection)
+            .await
+            .map_err(|e| warp::reject::custom(e))
+            .map(|rtfb_status| warp::reply::json(&RtfbJsonReply { rtfb_status }))
     }
 
     pub async fn add_repetition(
         collection: mongodb::Collection,
-        payload: AddRepetitionPayload,
+        body: AddRepetitionPayload,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        match payload
-            .set
-            .add_repetition(collection, payload.repetition)
+        body.set
+            .add_repetition(collection, body.repetition)
             .await
-        {
-            Ok(_) => Ok(warp::reply()),
-            Err(e) => Err(warp::reject::custom(e)),
-        }
+            .map_err(|e| warp::reject::custom(e))
+            .map(|_| warp::reply())
     }
 
     pub async fn add_imu_records(
         collection: mongodb::Collection,
         imurecords: AddImuDataPayload,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        match imurecords.data.insert(collection).await {
-            Ok(_) => Ok(warp::reply()),
-            Err(e) => Err(warp::reject::custom(e)),
-        }
+        imurecords
+            .data
+            .insert(collection)
+            .await
+            .map_err(|e| warp::reject::custom(e))
+            .map(|_| warp::reply())
     }
 
     pub async fn submit_survey(
         collection: mongodb::Collection,
-        survey_data: AddSurveyPayload,
+        survey: AddSurveyPayload,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        /*
-        let user = survey_data.extract_user();
-
-        match user.submit_survey(collection, survey_data).await {
-            Ok(_) => Ok(warp::reply()),
-            Err(e) => Err(warp::reject::custom(e)),
-        }
-        */
-        Ok(warp::reply())
+        survey
+            .insert(collection)
+            .await
+            .map_err(|e| warp::reject::custom(e))
+            .map(|_| warp::reply())
     }
 }
