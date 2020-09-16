@@ -1,11 +1,11 @@
 # ------------------------------------------------------------------------------
 # Cargo Build Stage
 # ------------------------------------------------------------------------------
-
 FROM rust:latest as cargo-build
 RUN USER=root cargo new --bin liftright-data-server
 WORKDIR ./liftright-data-server
 COPY ./Cargo.toml ./Cargo.toml
+RUN sed -i '/lrds_derive/d' Cargo.toml
 RUN cargo build --release
 RUN rm src/*.rs
 
