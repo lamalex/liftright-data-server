@@ -9,5 +9,5 @@ services:
 
 script:
   - docker build -t alexlauni/liftright-data-server -f Dockerfile . 
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - docker push alexlauni/liftright-data-server
+  - 'if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" == "main" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; docker push alexlauni/liftright-data-server; fi'
+
