@@ -36,7 +36,7 @@ pub async fn establish_db_connection() -> Result<Collection, LrdsError> {
         env::var("MONGO_DATABASE_CONN").expect("MONGO_DATABASE_CONN must be set!");
     let client_options = ClientOptions::parse(&connection_handle)
         .await
-        .map_err(|e| LrdsError::DbError(e))?;
+        .map_err(LrdsError::DbError)?;
 
     let client = Client::with_options(client_options).map_err(LrdsError::DbError)?;
     let db = client.database("liftright-staging");
