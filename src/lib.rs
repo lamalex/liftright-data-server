@@ -35,7 +35,7 @@ pub async fn establish_db_connection() -> Result<Collection, LrdsError> {
     let connection_handle =
         env::var("MONGO_DATABASE_CONN").expect("MONGO_DATABASE_CONN must be set!");
     let database_name = connection_handle
-        .split("/")
+        .split('/')
         .last()
         .expect("database must be set in MONGO_DATABASE_CONN");
 
