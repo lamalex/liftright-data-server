@@ -49,7 +49,8 @@ mod webserver {
             .parse()
             .expect("Could not create IP.");
 
-        Ok(warp::serve(api).run(addr).await)
+        warp::serve(api).run(addr).await;
+        Ok(())
     }
 }
 
