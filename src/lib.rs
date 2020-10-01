@@ -32,21 +32,12 @@ type LrdsResult<T> = Result<T, LrdsError>;
 pub async fn establish_db_connection() -> Result<Collection, LrdsError> {
     dotenv().ok();
 
-    let database_url = env::var("MONGO_DATABASE_ADDR").expect("MONGO_DATABASE_ADDR must be set");
-    let database_port = env::var("MONGO_DATABASE_PORT")
-        .unwrap_or("27017".to_string())
-        .parse::<u16>()
-        .expect("MONGO_DATABASE_PORT must be an unsigned 16-bit integer");
+    let connection_handle = env::var("MONGO_DATABASE_CONN").expect("MONGO_DATABASE_CONN must be set!");
+    let client_options = ClientOptions::parse(&connection_handle)
+    .await.map_err(|e| LrdsError::DbError(e))?;
 
-    let client_options = ClientOptions::builder()
-        .hosts(vec![mongodb::options::StreamAddress {
-            hostname: database_url.to_string(),
-            port: Some(database_port),
-        }])
-        .app_name(Some("LiftRight".to_string()))
-        .build();
     let client = Client::with_options(client_options).map_err(LrdsError::DbError)?;
-    let db = client.database("liftright");
+    let db = client.database("liftright-staging");
     let collection = db.collection("session_data");
 
     Ok(collection)
