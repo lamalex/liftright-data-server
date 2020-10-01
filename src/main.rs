@@ -112,7 +112,7 @@ mod filters {
         db: mongodb::Collection,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path!("v1" / "submit_survey")
-            .and(warp::post())
+            .and(warp::put())
             .and(with_db(db))
             .and(json_deserialize::<AddSurveyPayload>())
             .and_then(handlers::submit_survey)
