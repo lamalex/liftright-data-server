@@ -1,95 +1,57 @@
-use chrono::{offset::Utc, DateTime};
-use diesel::prelude::*;
+use crate::{
+    query_selector::{SurveyFilter, SurveyUpdate},
+    LrdsError, LrdsResult,
+};
+use chrono::{DateTime, Utc};
+use mongodb;
+use mongodb::bson;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use uuid::Uuid;
 
-use crate::schema::survey_results;
-use crate::LiftrightError;
-
-#[derive(Debug, Deserialize, Insertable, Serialize)]
-#[table_name = "survey_results"]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Survey {
     pub device_id: Uuid,
-    pub submitted: Option<DateTime<Utc>>,
-    pub survey_data: serde_json::Value,
+    #[serde(default = "chrono::Utc::now")]
+    pub submitted: DateTime<Utc>,
+    #[serde(rename = "survey_data")]
+    pub data: Vec<SurveyResponse>,
+}
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SurveyResponse {
+    pub question: String,
+    pub answer: Option<String>,
 }
 
-pub fn submit(conn: &PgConnection, data: Survey) -> Result<usize, LiftrightError> {
-    diesel::insert_into(survey_results::table)
-        .values(data)
-        .execute(conn)
-        .map_err(LiftrightError::DatabaseError)
+enum Selector<'a> {
+    Query(&'a Survey),
+    Update(&'a Survey),
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashMap;
-
-    #[test]
-    fn deserialize_survey() {
-        assert!(serde_json::from_str::<Survey>(&make_valid_survey_json()).is_ok());
+impl<'a> TryFrom<Selector<'a>> for bson::Document {
+    type Error = LrdsError;
+    fn try_from(var: Selector) -> LrdsResult<bson::Document> {
+        use Selector::*;
+        match var {
+            Query(survey) => bson::to_document(&SurveyFilter::from(survey))
+                .map_err(LrdsError::DbSerializationError),
+            Update(survey) => bson::Document::try_from(&SurveyUpdate::from(survey)),
+        }
     }
+}
 
-    #[test]
-    fn error_on_missing_device_id() {
-        let raw_json = format!(
-            "
-            {{
-                \"device_id\": \"\",
-                \"survey_data\": {}
-            }}
-            ",
-            make_survey_data()
-        );
+impl Survey {
+    pub async fn insert(self, collection: mongodb::Collection) -> LrdsResult<()> {
+        let query = bson::Document::try_from(Selector::Query(&self))?;
+        let update = bson::Document::try_from(Selector::Update(&self))?;
+        let options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
 
-        assert!(serde_json::from_str::<Survey>(&raw_json).is_err())
-    }
-
-    #[test]
-    #[ignore]
-    fn error_on_missing_survey() {
-        let raw_json = format!(
-            "
-            {{
-                \"device_id\": \"{}\",
-                \"survey_data\": \"\"
-            }}
-            ",
-            Uuid::new_v4()
-        );
-
-        assert!(serde_json::from_str::<Survey>(&raw_json).is_err())
-    }
-
-    fn make_valid_survey_json() -> String {
-        format!(
-            "
-            {{
-                \"device_id\": \"{}\",
-                \"survey_data\": {}  
-            }}
-            ",
-            Uuid::new_v4().to_string(),
-            make_survey_data()
-        )
-    }
-
-    fn make_survey_data() -> String {
-        let mut survey_data = HashMap::<String, Option<String>>::new();
-        survey_data.insert(
-            String::from("Was the game fun?"),
-            Some(String::from("Very")),
-        );
-        survey_data.insert(
-            String::from("Was the sensor/arm band comfortable?"),
-            Some(String::from("Somewhat")),
-        );
-        survey_data.insert(
-            String::from("What Metrics do you find useful to guage your performance over time?"),
-            Some(String::from("I 💪🏻 my 🍆 and 🍑 into a 🐉")),
-        );
-
-        serde_json::to_string(&survey_data).unwrap()
+        collection
+            .update_one(query, update, options)
+            .await
+            .map_err(LrdsError::DbError)
+            .map(|_| ())
     }
 }

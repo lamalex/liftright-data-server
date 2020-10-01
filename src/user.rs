@@ -1,54 +1,48 @@
-use crate::schema::users;
-use crate::LiftrightError;
-use diesel::{insert_into, prelude::*};
+use crate::{LrdsError, LrdsResult};
+use mongodb;
+use mongodb::bson;
+use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use uuid::Uuid;
 
-#[derive(Queryable, Identifiable, Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub struct User {
-    pub id: i32,
-    pub device_id: Uuid,
-    pub rtfb: bool,
+    device_id: Uuid,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+struct RtfbStatusFilter {
+    device_id: Uuid,
+    rtfb_status: bool,
+}
+
+impl From<User> for RtfbStatusFilter {
+    fn from(user: User) -> Self {
+        RtfbStatusFilter {
+            device_id: user.device_id,
+            rtfb_status: true,
+        }
+    }
+}
+
+impl TryFrom<User> for bson::Document {
+    type Error = LrdsError;
+    fn try_from(user: User) -> LrdsResult<Self> {
+        bson::to_document(&RtfbStatusFilter::from(user)).map_err(LrdsError::DbSerializationError)
+    }
 }
 
 impl User {
-    pub fn get_or_make_if_new(
-        conn: &PgConnection,
-        device_id: &Uuid,
-    ) -> Result<User, LiftrightError> {
-        match Self::find_user(conn, device_id)? {
-            Some(user) => Ok(user),
-            None => {
-                Self::register_user(conn, device_id)?;
-                Self::get_or_make_if_new(conn, device_id)
-            }
-        }
+    pub fn new(device_id: Uuid) -> Self {
+        User { device_id }
     }
 
-    fn register_user(conn: &PgConnection, device_id: &Uuid) -> Result<usize, LiftrightError> {
-        insert_into(users::table)
-            .values(users::device_id.eq(device_id))
-            .execute(conn)
-            .map_err(LiftrightError::DatabaseError)
-    }
-
-    fn find_user(conn: &PgConnection, device_id: &Uuid) -> Result<Option<User>, LiftrightError> {
-        let user = users::table
-            .filter(users::device_id.eq(device_id))
-            .first::<User>(conn)
-            .optional()
-            .map_err(LiftrightError::DatabaseError)?;
-
-        Ok(user)
-    }
-
-    pub fn check_rtfb_status(
-        conn: &PgConnection,
-        device_id: &Uuid,
-    ) -> Result<bool, LiftrightError> {
-        users::table
-            .select(users::columns::rtfb)
-            .filter(users::device_id.eq(device_id))
-            .first::<bool>(conn)
-            .map_err(LiftrightError::DatabaseError)
+    pub async fn check_rtfb_status(self, collection: mongodb::Collection) -> LrdsResult<bool> {
+        let filter = bson::Document::try_from(self)?;
+        Ok(collection
+            .find_one(filter, None)
+            .await
+            .map_err(LrdsError::DbError)?
+            .is_some())
     }
 }

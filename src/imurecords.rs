@@ -1,85 +1,64 @@
-use chrono::{offset::Utc, DateTime};
-use diesel::prelude::*;
+use mongodb;
+use mongodb::bson;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use std::convert::TryFrom;
 
-use crate::session::Session;
-use crate::schema::{imu_record_pairs, imu_records};
-use crate::LiftrightError;
+use crate::{
+    query_selector::{ImuRecordSetQuery, ImuRecordSetUpdate},
+    session::Session,
+    LrdsError, LrdsResult,
+};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Insertable, Queryable)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ImuRecord {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub time: DateTime<Utc>,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub time: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImuRecordSet {
-    pub session_id: Uuid,
-    pub data: Vec<ImuRecordPair>,
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ImuRecordPair {
     pub acc: ImuRecord,
     pub gyro: ImuRecord,
 }
 
-#[derive(Debug, Copy, Clone, Insertable, Queryable)]
-#[table_name = "imu_records"]
-struct NewImuRecord {
-    pub id: i32,
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub time: DateTime<Utc>,
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ImuRecordSet {
+    #[serde(flatten)]
+    pub session: Session,
+    pub data: Vec<ImuRecordPair>,
 }
 
-#[derive(Debug, Copy, Clone, Insertable, Queryable, Associations)]
-#[belongs_to(Session, foreign_key = "session_id")]
-#[table_name = "imu_record_pairs"]
-struct NewImuRecordPair {
-    pub id: i32,
-    pub session_id: Uuid,
-    pub acc: i32,
-    pub gyro: i32,  
+enum Selector<'a> {
+    Query(&'a ImuRecordSet),
+    Update(&'a ImuRecordSet),
 }
 
-#[derive(Debug, Copy, Clone, Insertable, Associations)]
-#[belongs_to(Session, foreign_key = "session_id")]
-#[table_name = "imu_record_pairs"]
-struct InsertImuRecordPair {
-    pub session_id: Uuid,
-    pub acc: i32,
-    pub gyro: i32,
+impl<'a> TryFrom<Selector<'a>> for bson::Document {
+    type Error = LrdsError;
+    fn try_from(var: Selector) -> LrdsResult<bson::Document> {
+        use Selector::*;
+        match var {
+            Query(imu_set) => bson::to_document(&ImuRecordSetQuery::from(imu_set))
+                .map_err(LrdsError::DbSerializationError),
+            Update(imu_set) => bson::Document::try_from(&ImuRecordSetUpdate::from(imu_set)),
+        }
+    }
 }
 
 impl ImuRecordSet {
-    pub fn add(conn: &PgConnection, records: ImuRecordSet) -> Result<usize, LiftrightError> {
-        use crate::schema::imu_records::dsl::*;
-        use crate::schema::imu_record_pairs::dsl::*;
-        let sess_id = records.session_id;
+    pub async fn insert(self, collection: mongodb::Collection) -> LrdsResult<()> {
+        let query = bson::Document::try_from(Selector::Query(&self))?;
+        let update = bson::Document::try_from(Selector::Update(&self))?;
+        let options = mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build();
 
-        let inserted_imu_data: Vec<NewImuRecord> = diesel::insert_into(imu_records)
-            .values(records.data.iter()
-                .map(|&pair| vec![pair.acc, pair.gyro])
-                .flatten()
-                .collect::<Vec<ImuRecord>>()
-            )
-            .get_results(conn).map_err(LiftrightError::DatabaseError)?;
-
-        let pairs: Vec<InsertImuRecordPair> = inserted_imu_data.chunks(2).map(|pair| {
-            InsertImuRecordPair {
-                session_id: sess_id,
-                acc: pair[0].id,
-                gyro: pair[1].id
-            }
-        }).collect();
-
-        diesel::insert_into(imu_record_pairs)
-        .values(pairs)
-        .execute(conn).map_err(LiftrightError::DatabaseError)
+        collection
+            .update_one(query, update, options)
+            .await
+            .map_err(LrdsError::DbError)
+            .map(|_| ())
     }
 }
