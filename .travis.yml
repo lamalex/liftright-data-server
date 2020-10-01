@@ -1,13 +1,30 @@
 language: rust
-rust:
-  - stable
-
 cache: cargo
-
+rust:
+  - 1.45.2
 services:
   - docker
+before_cache: |
+  cargo install cargo-tarpaulin
+before_script:
+- rustup component add rustfmt
+- rustup component add clippy
+- cargo install cargo-audit
+# As a result of https://github.com/travis-ci/travis-ci/issues/1066, we run
+# everything in one large command instead of multiple commands.
+# In this way, the build stops immediately if one of the commands fails.
+script: |
+  cargo fmt --all -- --check &&
+  cargo clippy -- -D warnings &&
+  cargo build &&
+  cargo test &&
+  cargo audit &&
+  docker build -t alexlauni/liftright-data-server -f Dockerfile . 
+after_success: |
+  cargo tarpaulin --ignore-tests
 
-script:
-  - docker build -t alexlauni/liftright-data-server -f Dockerfile . 
-  - 'if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" == "main" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; docker push alexlauni/liftright-data-server; fi'
-
+deploy:
+  provider: script
+  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; docker push alexlauni/liftright-data-server
+  on:
+    branch: main
