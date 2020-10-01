@@ -49,7 +49,8 @@ mod webserver {
             .parse()
             .expect("Could not create IP.");
 
-        Ok(warp::serve(api).run(addr).await)
+        warp::serve(api).run(addr).await;
+        Ok(())
     }
 }
 
@@ -177,7 +178,7 @@ mod handlers {
         let user = User::new(device_id);
         user.check_rtfb_status(collection)
             .await
-            .map_err(|e| warp::reject::custom(e))
+            .map_err(warp::reject::custom)
             .map(|rtfb_status| warp::reply::json(&RtfbJsonReply { rtfb_status }))
     }
 
@@ -188,7 +189,7 @@ mod handlers {
         body.set
             .add_repetition(collection, body.repetition)
             .await
-            .map_err(|e| warp::reject::custom(e))
+            .map_err(warp::reject::custom)
             .map(|_| warp::reply())
     }
 
@@ -200,7 +201,7 @@ mod handlers {
             .data
             .insert(collection)
             .await
-            .map_err(|e| warp::reject::custom(e))
+            .map_err(warp::reject::custom)
             .map(|_| warp::reply())
     }
 
@@ -211,7 +212,7 @@ mod handlers {
         survey
             .insert(collection)
             .await
-            .map_err(|e| warp::reject::custom(e))
+            .map_err(warp::reject::custom)
             .map(|_| warp::reply())
     }
 }

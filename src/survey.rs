@@ -3,7 +3,6 @@ use crate::{
     LrdsError, LrdsResult,
 };
 use chrono::{DateTime, Utc};
-use mongodb;
 use mongodb::bson;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
