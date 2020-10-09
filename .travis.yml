@@ -23,7 +23,6 @@ script: |
 
 after_success: 
 - cargo tarpaulin --ignore-tests
-- echo $(git rev-parse --short HEAD)
 
 deploy:
   provider: script
