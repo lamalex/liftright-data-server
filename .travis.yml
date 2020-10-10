@@ -19,7 +19,7 @@ script: |
   cargo build &&
   cargo test &&
   cargo audit &&
-  docker build -t alexlauni/liftright-data-server -f Dockerfile . 
+  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short HEAD) -f Dockerfile . 
 
 after_success: 
 - cargo tarpaulin --ignore-tests
