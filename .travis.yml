@@ -19,13 +19,13 @@ script: |
   cargo build &&
   cargo test &&
   cargo audit &&
-  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short HEAD) -f Dockerfile . 
+  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short HEAD) -t alexlauni/liftright-data-server:latest -f Dockerfile .
 
 after_success: 
 - cargo tarpaulin --ignore-tests
 
 deploy:
   provider: script
-  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; docker push alexlauni/liftright-data-server:$(git rev-parse --short HEAD)
+  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; docker push alexlauni/liftright-data-server
   on:
     branch: main
