@@ -23,7 +23,6 @@ script: |
   cargo clippy -- -D warnings &&
   cargo build &&
   cargo test &&
-  cargo audit &&
   docker build -t alexlauni/liftright-data-server:$(git rev-parse --short ${TRAVIS_COMMIT}) -t alexlauni/liftright-data-server:latest -f Dockerfile . 
 
 deploy:
