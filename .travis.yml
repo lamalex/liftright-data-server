@@ -10,7 +10,7 @@ env:
 
 before_install: |
   curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && 
-  chmod +x kubectl && mv kubectl /usr/local/bin 
+  chmod +x kubectl && mkdir -p ~/bin && mv kubectl ~/bin 
 
 before_cache: |
   cargo install cargo-tarpaulin
@@ -45,7 +45,7 @@ after_deploy: |
   export NEW_IMAGE="alexlauni/liftright-data-server:${REV_TAG}" &&
   git clone https://github.com/LiftRight/lrds-deploy &&
   cd lrds-deploy/lrds/bases/backend/ &&
-  kubectl patch --local \
+  ~/bin/kubectl patch --local \
     -o yaml \
     -f deployment.yaml \
     -p "spec:
