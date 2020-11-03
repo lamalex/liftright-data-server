@@ -1,3 +1,4 @@
+dist: focal
 language: rust
 cache: cargo
 rust:
@@ -11,8 +12,6 @@ before_cache: |
   cargo install cargo-tarpaulin
 
 before_script:
-- curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && \
-  chmod +x kubectl && mv kubectl /usr/local/bin
 - rustup component add rustfmt
 - rustup component add clippy
 - cargo install cargo-audit
@@ -39,7 +38,9 @@ deploy:
     branch: main
 
 after_deploy: |
-  export NEW_IMAGE="alexlauni/liftright-data-server:${REV_TAG}"
+- curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && 
+  chmod +x kubectl && mv kubectl /usr/local/bin &&
+  export NEW_IMAGE="alexlauni/liftright-data-server:${REV_TAG}" &&
   git clone https://github.com/LiftRight/lrds-deploy &&
   cd lrds-deploy/lrds/bases/backend/ &&
   kubectl patch --local \
