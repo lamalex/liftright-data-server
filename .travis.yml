@@ -4,12 +4,19 @@ rust:
   - 1.45.2
 services:
   - docker
+env:
+  - REV_TAG=$(giv rev-parse --short ${TRAVIS_COMMIT})"
+
 before_cache: |
   cargo install cargo-tarpaulin
+
 before_script:
+- curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && \
+  chmod +x kubectl && mv kubectl /usr/local/bin
 - rustup component add rustfmt
 - rustup component add clippy
 - cargo install cargo-audit
+
 # As a result of https://github.com/travis-ci/travis-ci/issues/1066, we run
 # everything in one large command instead of multiple commands.
 # In this way, the build stops immediately if one of the commands fails.
@@ -19,13 +26,32 @@ script: |
   cargo build &&
   cargo test &&
   cargo audit &&
-  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short HEAD) -t alexlauni/liftright-data-server:latest -f Dockerfile .
+  docker build -t alexlauni/liftright-data-server:${REV_TAG} -t alexlauni/liftright-data-server:latest -f Dockerfile . 
 
 after_success: 
 - cargo tarpaulin --ignore-tests
 
 deploy:
   provider: script
-  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; docker push alexlauni/liftright-data-server
+  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; \
+    docker push alexlauni/liftright-data-server
   on:
     branch: main
+
+after_deploy: |
+  export NEW_IMAGE="alexlauni/liftright-data-server:${REV_TAG}"
+  git clone https://github.com/LiftRight/lrds-deploy &&
+  cd lrds-deploy/lrds/bases/backend/ &&
+  kubectl patch --local \
+    -o yaml \
+    -f deployment.yaml \
+    -p "spec:
+          template:
+            spec:
+              containers:
+                - name: lrds
+                  image: ${NEW_IMAGE}" \
+    > /tmp/newdeployment.yaml &&
+   mv /tmp/newdeployment.yaml deployment.yaml &&
+   git commit deployment.yaml -m "Update docker image to ${NEW_IMAGE}" &&
+   git push
