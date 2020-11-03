@@ -8,6 +8,10 @@ services:
 env:
   - REV_TAG=$(giv rev-parse --short ${TRAVIS_COMMIT})"
 
+before_install: |
+  curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && 
+  chmod +x kubectl && mv kubectl /usr/local/bin &&
+
 before_cache: |
   cargo install cargo-tarpaulin
 
@@ -38,8 +42,6 @@ deploy:
     branch: main
 
 after_deploy: |
-- curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && 
-  chmod +x kubectl && mv kubectl /usr/local/bin &&
   export NEW_IMAGE="alexlauni/liftright-data-server:${REV_TAG}" &&
   git clone https://github.com/LiftRight/lrds-deploy &&
   cd lrds-deploy/lrds/bases/backend/ &&
