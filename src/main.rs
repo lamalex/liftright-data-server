@@ -1,5 +1,13 @@
+use async_trait::async_trait;
 use clap::{crate_version, value_t, App, Arg};
 use std::env;
+
+use liftright_data_server::LrdsError;
+
+#[async_trait]
+pub trait LrdsServer {
+    async fn run(&self, port: u32) -> Result<(), LrdsError>;
+}
 
 fn main() {
     const DEFAULT_PORT: u32 = 3030;
@@ -28,29 +36,40 @@ fn main() {
     }
     pretty_env_logger::init();
 
-    webserver::run(port).unwrap()
+    webserver::run(&webserver::WarpServer {}, port).unwrap();
 }
 
 mod webserver {
-    use super::filters;
-
+    use async_trait::async_trait;
     use std::net::SocketAddrV4;
     use warp::Filter;
 
     use liftright_data_server::LrdsError;
 
+    use super::filters;
+    use super::LrdsServer;
+
+    pub struct WarpServer;
+
+    #[async_trait]
+    impl LrdsServer for WarpServer {
+        async fn run(&self, port: u32) -> Result<(), LrdsError> {
+            let db = liftright_data_server::establish_db_connection().await?;
+
+            let api = filters::rest_api(db).with(warp::log("liftright_data_server"));
+
+            let addr: SocketAddrV4 = format!("0.0.0.0:{}", port)
+                .parse()
+                .expect("Could not create IP.");
+
+            warp::serve(api).run(addr).await;
+            Ok(())
+        }
+    }
+
     #[tokio::main]
-    pub async fn run(port: u32) -> Result<(), LrdsError> {
-        let db = liftright_data_server::establish_db_connection().await?;
-
-        let api = filters::rest_api(db).with(warp::log("liftright_data_server"));
-
-        let addr: SocketAddrV4 = format!("0.0.0.0:{}", port)
-            .parse()
-            .expect("Could not create IP.");
-
-        warp::serve(api).run(addr).await;
-        Ok(())
+    pub async fn run(server: &dyn LrdsServer, port: u32) -> Result<(), LrdsError> {
+        server.run(port).await
     }
 }
 

@@ -1,10 +1,11 @@
 [package]
 name = "liftright-data-server"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Alexander Launi <alaun001@odu.edu>"]
 edition = "2018"
 
 [dependencies]
+async-trait = "0.1"
 warp = "0.2"
 clap = "2.33"
 dotenv = "0.15.0"
