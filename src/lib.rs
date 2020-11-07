@@ -17,10 +17,17 @@ pub mod user;
 pub enum LrdsError {
     ConversionError,
     UnimplementedError,
+    IOError(std::io::Error),
     DbError(mongodb::error::Error),
     ObjectIdError(mongodb::bson::oid::Error),
     DbSerializationError(mongodb::bson::ser::Error),
     DbDeserializationError(mongodb::bson::de::Error),
+}
+
+impl From<std::io::Error> for LrdsError {
+    fn from(e: std::io::Error) -> Self {
+        LrdsError::IOError(e)
+    }
 }
 
 impl Reject for LrdsError {}

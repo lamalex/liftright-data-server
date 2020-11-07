@@ -9,7 +9,8 @@ pub trait LrdsServer {
     async fn run(&self, port: u32) -> Result<(), LrdsError>;
 }
 
-fn main() {
+#[tokio::main]
+pub async fn main() -> Result<(), LrdsError> {
     const DEFAULT_PORT: u32 = 3030;
     const ABOUT: &str = "Data collection server for LiftRight";
 
@@ -36,10 +37,11 @@ fn main() {
     }
     pretty_env_logger::init();
 
-    webserver::run(&webserver::WarpServer {}, port).unwrap();
+    webserver::run(&webserver::WarpServer {}, port).await
 }
 
 mod webserver {
+    use actix_web::{App, HttpServer};
     use async_trait::async_trait;
     use std::net::SocketAddrV4;
     use warp::Filter;
@@ -49,6 +51,7 @@ mod webserver {
     use super::filters;
     use super::LrdsServer;
 
+    pub struct ActixServer;
     pub struct WarpServer;
 
     #[async_trait]
@@ -62,12 +65,21 @@ mod webserver {
                 .parse()
                 .expect("Could not create IP.");
 
-            warp::serve(api).run(addr).await;
-            Ok(())
+            Ok(warp::serve(api).run(addr).await)
         }
     }
 
-    #[tokio::main]
+    #[async_trait]
+    impl LrdsServer for ActixServer {
+        async fn run(&self, port: u32) -> Result<(), LrdsError> {
+            let server = HttpServer::new(move || App::new())
+                .listen(std::net::TcpListener::bind(format!("0.0.0.0:{}", port))?)?
+                .run();
+
+            Ok(server.await?)
+        }
+    }
+
     pub async fn run(server: &dyn LrdsServer, port: u32) -> Result<(), LrdsError> {
         server.run(port).await
     }
