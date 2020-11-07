@@ -9,9 +9,9 @@ pub trait LrdsServer {
     async fn run(&self, port: u32) -> Result<(), LrdsError>;
 }
 
-#[tokio::main]
+#[actix_web::main]
 pub async fn main() -> Result<(), LrdsError> {
-    const DEFAULT_PORT: u32 = 3030;
+    const DEFAULT_PORT: &str = "3030";
     const ABOUT: &str = "Data collection server for LiftRight";
 
     let opts = App::new("liftright data server")
@@ -20,15 +20,24 @@ pub async fn main() -> Result<(), LrdsError> {
         .about(ABOUT)
         .arg(
             Arg::with_name("port")
-                .help("Port to listen on (default 3030)")
+                .help("Port to listen on")
                 .short("p")
                 .long("port")
-                .takes_value(true)
+                .default_value(DEFAULT_PORT)
                 .value_name("PORT"),
+        )
+        .arg(
+            Arg::with_name("server")
+                .help("Web server implementation")
+                .long("server")
+                .possible_values(&webserver::LrdsServerImpl::variants())
+                .case_insensitive(true)
+                .default_value("Warp")
+                .value_name("SERVER"),
         )
         .get_matches();
 
-    let port = value_t!(opts.value_of("port"), u32).unwrap_or(DEFAULT_PORT);
+    let port = value_t!(opts, "port", u32).unwrap_or_else(|e| e.exit());
 
     if env::var_os("RUST_LOG").is_none() {
         // Set `RUST_LOG=liftright_data_server=debug` to see debug logs,
@@ -37,12 +46,14 @@ pub async fn main() -> Result<(), LrdsError> {
     }
     pretty_env_logger::init();
 
-    webserver::run(&webserver::WarpServer {}, port).await
+    let server = value_t!(opts, "server", webserver::LrdsServerImpl).unwrap_or_else(|e| e.exit());
+    webserver::run(server, port).await
 }
 
 mod webserver {
     use actix_web::{App, HttpServer};
     use async_trait::async_trait;
+    use clap::arg_enum;
     use std::net::SocketAddrV4;
     use warp::Filter;
 
@@ -50,6 +61,21 @@ mod webserver {
 
     use super::filters;
     use super::LrdsServer;
+
+    arg_enum! {
+        #[derive(PartialEq, Debug)]
+        pub enum LrdsServerImpl {
+            Actix,
+            Warp
+        }
+    }
+
+    #[async_trait]
+    impl LrdsServer for LrdsServerImpl {
+        async fn run(&self, _port: u32) -> Result<(), LrdsError> {
+            Err(LrdsError::UnimplementedError)
+        }
+    }
 
     pub struct ActixServer;
     pub struct WarpServer;
@@ -65,14 +91,15 @@ mod webserver {
                 .parse()
                 .expect("Could not create IP.");
 
-            Ok(warp::serve(api).run(addr).await)
+            warp::serve(api).run(addr).await;
+            Ok(())
         }
     }
 
     #[async_trait]
     impl LrdsServer for ActixServer {
         async fn run(&self, port: u32) -> Result<(), LrdsError> {
-            let server = HttpServer::new(move || App::new())
+            let server = HttpServer::new(App::new)
                 .listen(std::net::TcpListener::bind(format!("0.0.0.0:{}", port))?)?
                 .run();
 
@@ -80,8 +107,13 @@ mod webserver {
         }
     }
 
-    pub async fn run(server: &dyn LrdsServer, port: u32) -> Result<(), LrdsError> {
-        server.run(port).await
+    pub async fn run(server: LrdsServerImpl, port: u32) -> Result<(), LrdsError> {
+        match server {
+            LrdsServerImpl::Actix => &ActixServer as &dyn LrdsServer,
+            LrdsServerImpl::Warp => &WarpServer as &dyn LrdsServer,
+        }
+        .run(port)
+        .await
     }
 }
 
