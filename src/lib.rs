@@ -1,7 +1,6 @@
 use dotenv::dotenv;
 use mongodb::{options::ClientOptions, Client, Collection};
 use std::env;
-use warp::reject::Reject;
 
 pub mod imurecords;
 pub mod json_api;
@@ -24,13 +23,20 @@ pub enum LrdsError {
     DbDeserializationError(mongodb::bson::de::Error),
 }
 
+impl std::error::Error for LrdsError {}
+
+impl std::fmt::Display for LrdsError {
+    fn fmt(&self, _fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error>{
+        Ok(())
+    }
+}
+
 impl From<std::io::Error> for LrdsError {
     fn from(e: std::io::Error) -> Self {
         LrdsError::IOError(e)
     }
 }
 
-impl Reject for LrdsError {}
 type LrdsResult<T> = Result<T, LrdsError>;
 
 /// Establishes a connection to mongo db.

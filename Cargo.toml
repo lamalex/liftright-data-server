@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 async-trait = "0.1"
-warp = "0.2"
+warp = { version = "0.2", optional = true }
 clap = "2.33"
 dotenv = "0.15.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -18,20 +18,24 @@ log = "0.4"
 pretty_env_logger = "0.4"
 mongodb = "1.1.1"
 lrds_derive = { path = "./lrds_derive" }
-actix-web = "3"
-actix-files = "0.3.0"
-actix-http = "2.0"
-actix-rt = "1.1.1"
+actix-web = { version = "3", optional = true }
+actix-http = { version = "2.0", optional = true }
+actix-rt = { version = "1.1.1", optional = true }
 futures = "0.3.5"
 color-eyre = "0.5.4"
 tokio = { version = "0.2", features = ["full"] }
 tokio-test = "0.2.1"
 tracing-error = "0.1.2"
 tracing-bunyan-formatter = "0.1.6"
-tracing-actix-web = "0.2.1"
+tracing-actix-web = { version = "0.2.1", optional = true }
 tracing-log = "0.1.1"
 tracing = "0.1.21"
 
 [dev-dependencies]
 reqwest = "0.10.8"
 
+[features]
+server_actix = ["actix-web", "actix-http", "actix-rt", "tracing-actix-web"]
+server_warp = ["warp"]
+
+default = ["server_warp"]

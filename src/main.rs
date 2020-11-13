@@ -1,16 +1,29 @@
-use async_trait::async_trait;
 use clap::{crate_version, value_t, App, Arg};
 use std::env;
+use color_eyre::eyre;
 
-use liftright_data_server::LrdsError;
-
-#[async_trait]
-pub trait LrdsServer {
-    async fn run(&self, port: u32) -> Result<(), LrdsError>;
+#[cfg(feature = "server_warp")]
+#[tokio::main]
+pub async fn main() -> Result<(), eyre::Error> {
+    start().await
 }
 
-#[actix_web::main]
-pub async fn main() -> Result<(), LrdsError> {
+#[cfg(feature = "server_actix")]
+#[actix_rt::main]
+pub async fn main() -> Result<(), eyre::Error> {
+    start().await?
+}
+
+async fn start() -> Result<(), eyre::Error> {
+    color_eyre::install()?;
+
+    if env::var_os("RUST_LOG").is_none() {
+        // Set `RUST_LOG=liftright_data_server=debug` to see debug logs,
+        // this only shows access logs.
+        env::set_var("RUST_LOG", "liftright_data_server=info");
+    }
+    pretty_env_logger::init();
+
     const DEFAULT_PORT: &str = "3030";
     const ABOUT: &str = "Data collection server for LiftRight";
 
@@ -26,97 +39,35 @@ pub async fn main() -> Result<(), LrdsError> {
                 .default_value(DEFAULT_PORT)
                 .value_name("PORT"),
         )
-        .arg(
-            Arg::with_name("server")
-                .help("Web server implementation")
-                .long("server")
-                .possible_values(&webserver::LrdsServerImpl::variants())
-                .case_insensitive(true)
-                .default_value("Warp")
-                .value_name("SERVER"),
-        )
         .get_matches();
 
     let port = value_t!(opts, "port", u32).unwrap_or_else(|e| e.exit());
-
-    if env::var_os("RUST_LOG").is_none() {
-        // Set `RUST_LOG=liftright_data_server=debug` to see debug logs,
-        // this only shows access logs.
-        env::set_var("RUST_LOG", "liftright_data_server=info");
-    }
-    pretty_env_logger::init();
-
-    let server = value_t!(opts, "server", webserver::LrdsServerImpl).unwrap_or_else(|e| e.exit());
-    webserver::run(server, port).await
+    webserver::run(port).await.map_err(eyre::Error::new)
 }
 
+#[cfg(feature = "server_warp")]
 mod webserver {
-    use actix_web::{App, HttpServer};
-    use async_trait::async_trait;
-    use clap::arg_enum;
-    use std::net::SocketAddrV4;
-    use warp::Filter;
-
+    
     use liftright_data_server::LrdsError;
 
+    use std::net::SocketAddrV4;
+    use warp::Filter;
     use super::filters;
-    use super::LrdsServer;
+    
+    pub async fn run(port: u32) -> Result<(), LrdsError> {
+        let db = liftright_data_server::establish_db_connection().await?;
+        let api = filters::rest_api(db).with(warp::log("liftright_data_server"));
 
-    arg_enum! {
-        #[derive(PartialEq, Debug)]
-        pub enum LrdsServerImpl {
-            Actix,
-            Warp
-        }
-    }
+        let addr: SocketAddrV4 = format!("0.0.0.0:{}", port)
+            .parse()
+            .expect("Could not create IP.");
 
-    #[async_trait]
-    impl LrdsServer for LrdsServerImpl {
-        async fn run(&self, _port: u32) -> Result<(), LrdsError> {
-            Err(LrdsError::UnimplementedError)
-        }
-    }
-
-    pub struct ActixServer;
-    pub struct WarpServer;
-
-    #[async_trait]
-    impl LrdsServer for WarpServer {
-        async fn run(&self, port: u32) -> Result<(), LrdsError> {
-            let db = liftright_data_server::establish_db_connection().await?;
-
-            let api = filters::rest_api(db).with(warp::log("liftright_data_server"));
-
-            let addr: SocketAddrV4 = format!("0.0.0.0:{}", port)
-                .parse()
-                .expect("Could not create IP.");
-
-            warp::serve(api).run(addr).await;
-            Ok(())
-        }
-    }
-
-    #[async_trait]
-    impl LrdsServer for ActixServer {
-        async fn run(&self, port: u32) -> Result<(), LrdsError> {
-            let server = HttpServer::new(App::new)
-                .listen(std::net::TcpListener::bind(format!("0.0.0.0:{}", port))?)?
-                .run();
-
-            Ok(server.await?)
-        }
-    }
-
-    pub async fn run(server: LrdsServerImpl, port: u32) -> Result<(), LrdsError> {
-        match server {
-            LrdsServerImpl::Actix => &ActixServer as &dyn LrdsServer,
-            LrdsServerImpl::Warp => &WarpServer as &dyn LrdsServer,
-        }
-        .run(port)
-        .await
+        warp::serve(api).run(addr).await;
+        Ok(())
     }
 }
 
+#[cfg(feature = "server_warp")]
 mod filters {
     use super::handlers;
     use uuid::Uuid;
@@ -204,6 +155,7 @@ mod filters {
     }
 }
 
+#[cfg(feature = "server_warp")]
 mod handlers {
     use uuid::Uuid;
     use warp::http;
@@ -277,5 +229,19 @@ mod handlers {
             .await
             .map_err(warp::reject::custom)
             .map(|_| warp::reply())
+    }
+}
+
+#[cfg(feature = "server_actix")]
+mod webserver {
+    use actix_web::{App, HttpServer};
+    use color_eyre::Result;
+
+    pub async fn run(port: u32) -> Result<()> {
+        let server = HttpServer::new(App::new)
+            .listen(std::net::TcpListener::bind(format!("0.0.0.0:{}", port))?)?
+            .run();
+        
+        Ok(server.await?)
     }
 }
