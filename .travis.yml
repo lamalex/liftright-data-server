@@ -1,13 +1,16 @@
+---
 dist: focal
 language: rust
 cache: cargo
 rust:
   - 1.45.2
+
 services:
   - docker
 
 before_install: |
-  curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && 
+  LATEST_KUBE_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt) &&
+  curl -LO "https://storage.googleapis.com/kubernetes-release/release/${LATEST_KUBE_VERSION}/bin/linux/amd64/kubectl" && 
   chmod +x kubectl && mkdir -p ~/bin && mv kubectl ~/bin 
 
 before_script:
@@ -22,12 +25,14 @@ script: |
   cargo clippy -- -D warnings &&
   cargo build &&
   cargo test &&
-  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short ${TRAVIS_COMMIT}) -t alexlauni/liftright-data-server:latest -f Dockerfile . 
+  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short ${TRAVIS_COMMIT}) \
+    -t alexlauni/liftright-data-server:latest -f Dockerfile .
 
 deploy:
   provider: script
-  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; \
-    docker push alexlauni/liftright-data-server
+  script:
+    - docker login -u ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD}
+    - docker push alexlauni/liftright-data-server
   on:
     branch: main
 

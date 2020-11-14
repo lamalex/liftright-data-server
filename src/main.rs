@@ -122,7 +122,7 @@ mod filters {
     where
         T: serde::de::DeserializeOwned + Send,
     {
-        warp::body::content_length_limit(1024 * 1024).and(warp::body::json())
+        warp::body::json()
     }
 
     fn with_db(
