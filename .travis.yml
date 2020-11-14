@@ -52,4 +52,8 @@ after_deploy: |
     > /tmp/newdeployment.yaml &&
    mv /tmp/newdeployment.yaml deployment.yaml &&
    git commit deployment.yaml -m "Update docker image to ${NEW_IMAGE}" &&
-   git push origin main
+   git remote add origin-secure https://${GH_TOKEN}@github.com/lamalex/liftright-data-server > /dev/null 2>& &&
+   git push origin-secure main
+env:
+  global:
+    secure: GVZQccYg6Z/jDuDDWth9y/eaQ2WVjvUXAL84mhvLiIyrfFgRH2m4wbZsXEzpwBWWcABPofauT9NWZmrn6wjxVX1JjKnZtz87MckIr2mURryOu9kY9d1pe4RNCKprj7Abia3NdoHpahv8IOR/jaEgHePAS2rjRC7feWdQYfwqqAFXuAVAMsJb8omiKTJCVI4EITpiHhzSIW/SuDFD0o6COPTmECCsw3PabL3EfWhSegavQQFjus4lbv3/kHTTnInEmGc5nxz9lEQWibo64TexgBJn8anffpPGa+sgd6YAU7hqfkjppeD7wGE+NkraG+N2pzVigbm1fCMsLiGVaDpvNDraaxhjfkhDzE4gMU4saxmdidkhYS4CCceBEv7t+0AB2ERbEkTq8yFMDi4JJE2nX4Z9/39GW4ABOJcIrDgz+HL9dG4AX0wJMj5njknTmnO/SqwxLyzczfcJjMo8ET7kNLYrSq3VL/gtW7rHyCxa+sPznSNIoDj2O2gql8EGh5BbAhchmc+NdybKyWlUEVSm2b0rwz0FzjxSmkgHYYx6evb894ug70t+I+cpRuA6JRml9VzmkikAMF+L/i6dWRPVSTQXRA13HwQm4jnIm5CGO/IRAoiRTYtLOemT6vrtzEgp7kLbkH/vjIwmVNjfJZZqgwttXihsHrIH9h/ALOP9mqE=
