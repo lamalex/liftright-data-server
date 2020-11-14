@@ -38,7 +38,7 @@ deploy:
 
 after_deploy: |
   export NEW_IMAGE="alexlauni/liftright-data-server:$(git rev-parse --short ${TRAVIS_COMMIT})" &&
-  git clone https://github.com/LiftRight/lrds-deploy &&
+  git clone git@github.com:LiftRight/lrds-deploy.git &&
   cd lrds-deploy/lrds/bases/backend/ &&
   ~/bin/kubectl patch --local \
     -o yaml \
