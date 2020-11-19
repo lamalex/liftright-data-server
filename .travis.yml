@@ -30,7 +30,7 @@ script: |
 deploy:
   provider: script
   script:
-    - docker login -u ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD}
+    - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
     - docker push alexlauni/liftright-data-server
   on:
     branch: main
@@ -40,6 +40,6 @@ after_deploy: |
   git clone https://github.com/LiftRight/lrds-deploy.git &&
   cd lrds-deploy/lrds/overlays/staging &&
   kustomize edit set image lamalex/liftright-data-server=lamalex/liftright-data-server:${NEW_TAG} &&
-  git commit deployment.yaml -m "Update staging docker image to ${NEW_TAG}" &&
+  git commit kustomize.yaml -m "Update staging docker image to ${NEW_TAG}" &&
   git remote set-url origin https://launibot:${GH_TOKEN}@github.com/lamalex/liftright-data-server &&
   git push origin main
