@@ -9,13 +9,11 @@ services:
   - docker
 
 before_install: |
-  LATEST_KUBE_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt) &&
-  curl -LO "https://storage.googleapis.com/kubernetes-release/release/${LATEST_KUBE_VERSION}/bin/linux/amd64/kubectl" && 
-  chmod +x kubectl && mkdir -p ~/bin && mv kubectl ~/bin 
+  curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
 
 before_script:
-- rustup component add rustfmt
-- rustup component add clippy
+  - rustup component add rustfmt
+  - rustup component add clippy
 
 # As a result of https://github.com/travis-ci/travis-ci/issues/1066, we run
 # everything in one large command instead of multiple commands.
@@ -37,20 +35,10 @@ deploy:
     branch: main
 
 after_deploy: |
-  export NEW_IMAGE="alexlauni/liftright-data-server:$(git rev-parse --short ${TRAVIS_COMMIT})" &&
+  export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
   git clone git@github.com:LiftRight/lrds-deploy.git &&
-  cd lrds-deploy/lrds/bases/backend/ &&
-  ~/bin/kubectl patch --local \
-    -o yaml \
-    -f deployment.yaml \
-    -p "spec:
-          template:
-            spec:
-              containers:
-                - name: lrds
-                  image: ${NEW_IMAGE}" \
-    > /tmp/newdeployment.yaml &&
-   mv /tmp/newdeployment.yaml deployment.yaml &&
-   git commit deployment.yaml -m "Update docker image to ${NEW_IMAGE}" &&
-   git remote add origin-secure https://${GH_TOKEN}@github.com/lamalex/liftright-data-server &&
-   git push origin-secure main
+  cd lrds-deploy/lrds/overlays/staging &&
+  ./kustomize edit set image lamalex/liftright-data-server=lamalex/liftright-data-server:${NEW_TAG} &&
+  git commit deployment.yaml -m "Update staging docker image to ${NEW_TAG}" &&
+  git remote set-url origin https://launibot:${GH_TOKEN}@github.com/lamalex/liftright-data-server &&
+  git push origin main
