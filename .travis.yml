@@ -36,7 +36,7 @@ deploy:
 
 after_deploy: |
   export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
-  git clone git@github.com:LiftRight/lrds-deploy.git &&
+  git clone https://github.com/LiftRight/lrds-deploy.git &&
   cd lrds-deploy/lrds/overlays/staging &&
   ./kustomize edit set image lamalex/liftright-data-server=lamalex/liftright-data-server:${NEW_TAG} &&
   git commit deployment.yaml -m "Update staging docker image to ${NEW_TAG}" &&
