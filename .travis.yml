@@ -12,34 +12,36 @@ before_install: |
   curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
     mv kustomize ~/bin
 
-before_script:
-  - rustup component add rustfmt
-  - rustup component add clippy
-
-# As a result of https://github.com/travis-ci/travis-ci/issues/1066, we run
-# everything in one large command instead of multiple commands.
-# In this way, the build stops immediately if one of the commands fails.
-script: |
-  cargo fmt --all -- --check &&
-  cargo clippy -- -D warnings &&
-  cargo build &&
-  cargo test &&
-  docker build -t alexlauni/liftright-data-server:$(git rev-parse --short ${TRAVIS_COMMIT}) \
-    -t alexlauni/liftright-data-server:latest -f Dockerfile .
-
-deploy:
-  provider: script
-  script:
-    - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-    - docker push alexlauni/liftright-data-server
-  on:
-    branch: main
-
-after_deploy: |
-  export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
-  git clone https://github.com/LiftRight/lrds-deploy.git &&
-  cd lrds-deploy/lrds/overlays/staging &&
-  kustomize edit set image alexlauni/liftright-data-server=alexlauni/liftright-data-server:${NEW_TAG} &&
-  git commit kustomization.yaml -m "Update staging docker image to ${NEW_TAG}" &&
-  git remote set-url origin https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-deploy.git &&
-  git push origin main
+jobs:
+  include:
+    - stage: build
+      before_script:
+        - rustup component add rustfmt
+        - rustup component add clippy
+      # As a result of https://github.com/travis-ci/travis-ci/issues/1066, we run
+      # everything in one large command instead of multiple commands.
+      # In this way, the build stops immediately if one of the commands fails.
+      script: |
+        cargo fmt --all -- --check &&
+        cargo clippy -- -D warnings &&
+        cargo build &&
+        cargo test
+    - stage: build
+      script: 
+        - echo ${DOCKER_PASSWORD} | docker login -u "${DOCKER_USERNAME}" --password-stdin
+        - docker build -t latest -f Dockerfile .
+        - docker tag $(git rev-parse --short ${TRAVIS_COMMIT}) liftright-data-server
+        - docker push ${DOCKER_USERNAME}/liftright-data-server
+      on:
+        branch: main
+    - stage: deploy
+      script: |
+        export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
+        git clone https://github.com/LiftRight/lrds-deploy.git &&
+        cd lrds-deploy/lrds/overlays/staging &&
+        kustomize edit set image alexlauni/liftright-data-server=alexlauni/liftright-data-server:${NEW_TAG} &&
+        git commit kustomization.yaml -m "Update staging docker image to ${NEW_TAG}" &&
+        git remote set-url origin https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-deploy.git &&
+        git push origin main
+      on:
+        branch: main
