@@ -5,13 +5,14 @@
     <title>Benchmark Report</title>
   </head>
   <body>
-<h1>Benchmark of a6f3561-1, travis-work-851bf83-1, travis-work-38456db-1, travis-work-a4e57af-1, travis-work-d6a369f-1</h1>
+<h1>Benchmark of a6f3561-1, travis-work-71fbc71-1, travis-work-851bf83-1, travis-work-38456db-1, travis-work-a4e57af-1, travis-work-d6a369f-1</h1>
 <h2>General Info &amp; Checks</h2>
 <table>
 <thead>
 <tr>
 <th>Check</th>
 <th>a6f3561-1</th>
+<th>travis-work-71fbc71-1</th>
 <th>travis-work-851bf83-1</th>
 <th>travis-work-38456db-1</th>
 <th>travis-work-a4e57af-1</th>
@@ -23,12 +24,14 @@
 <td>Docker image size (MB)</td>
 <td><strong>115</strong></td>
 <td><strong>111</strong></td>
+<td><strong>111</strong></td>
 <td><strong>115</strong></td>
 <td><strong>115</strong></td>
 <td><strong>115</strong></td>
 </tr>
 <tr>
 <td>Does not start with invalid mongodb connection string</td>
+<td>Bad, did not exit in 15s</td>
 <td>Bad, did not exit in 15s</td>
 <td>Bad, did not exit in 15s</td>
 <td>Bad, did not exit in 15s</td>
@@ -42,9 +45,11 @@
 <td>Good, exited in 0.2s</td>
 <td>Good, exited in 0.2s</td>
 <td>Good, exited in 0.2s</td>
+<td>Good, exited in 0.2s</td>
 </tr>
 <tr>
 <td>HTTP GET / returns 200 or 404</td>
+<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -58,9 +63,11 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
+<td>Good</td>
 </tr>
 <tr>
 <td>HTTP GET /v1/rtfb_status returns 404</td>
+<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -74,9 +81,11 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
+<td>Good</td>
 </tr>
 <tr>
 <td>HTTP GET /v1/rtfb_status/{uuid} returns 200 and correct object</td>
+<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -90,9 +99,11 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
+<td>Good</td>
 </tr>
 <tr>
 <td>Service logs every request, message contains url path</td>
+<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -102,6 +113,7 @@
 <tr>
 <td>Startup time (to start responding) secs</td>
 <td><strong>0.00591</strong></td>
+<td><strong>0.00482</strong></td>
 <td><strong>0.00322</strong></td>
 <td><strong>0.00479</strong></td>
 <td><strong>0.00332</strong></td>
@@ -114,10 +126,12 @@
 <td>Bad, did not stop in 15.4s</td>
 <td>Bad, did not stop in 15.4s</td>
 <td>Bad, did not stop in 15.4s</td>
+<td>Bad, did not stop in 15.4s</td>
 </tr>
 <tr>
 <td>Threads with 1 online vCPU, 1.0 soft CPU limit</td>
 <td><strong>liftright-data-</strong></td>
+<td><strong>None</strong></td>
 <td><strong>None</strong></td>
 <td><strong>None</strong></td>
 <td><strong>liftright-data-</strong></td>
@@ -128,11 +142,11 @@
 <td><strong>liftright-data-</strong></td>
 <td><strong>None</strong></td>
 <td><strong>None</strong></td>
+<td><strong>None</strong></td>
 <td><strong>liftright-data-</strong></td>
 <td><strong>liftright-data-</strong></td>
 </tr>
 </tbody></table><h2>Graphs</h2>
-<p><em>The graphs are interactive, view the rendered HTML locally to enjoy it.</em></p>
 <embed type="image/svg+xml" src="bench-results.startup_time_figure.svg" alt="bench-results.startup_time_figure.svg" width="49%"/>
 <embed type="image/svg+xml" src="bench-results.errors_vs_connections_figure.svg" alt="bench-results.errors_vs_connections_figure.svg" width="49%"/>
 <embed type="image/svg+xml" src="bench-results.requests_vs_connections_figure.svg" alt="bench-results.requests_vs_connections_figure.svg" width="49%"/>
