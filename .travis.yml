@@ -8,9 +8,6 @@ rust:
 services:
   - docker
 
-before_install: |
-  curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
-    mv kustomize ~/bin
 
 jobs:
   include:
@@ -27,14 +24,17 @@ jobs:
         cargo build &&
         cargo test
     - stage: build
+      if: branch = main
       script: 
         - echo ${DOCKER_PASSWORD} | docker login -u "${DOCKER_USERNAME}" --password-stdin
         - docker build -t latest -f Dockerfile .
         - docker tag $(git rev-parse --short ${TRAVIS_COMMIT}) liftright-data-server
         - docker push ${DOCKER_USERNAME}/liftright-data-server
-      branches:
-        - main
     - stage: deploy
+      if: branch = main
+      before_install: 
+        - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
+          mv kustomize ~/bin
       script: |
         export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
         git clone https://github.com/LiftRight/lrds-deploy.git &&
@@ -43,5 +43,3 @@ jobs:
         git commit kustomization.yaml -m "Update staging docker image to ${NEW_TAG}" &&
         git remote set-url origin https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-deploy.git &&
         git push origin main
-      branches:
-        - main
