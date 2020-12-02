@@ -32,8 +32,8 @@ jobs:
         - docker build -t latest -f Dockerfile .
         - docker tag $(git rev-parse --short ${TRAVIS_COMMIT}) liftright-data-server
         - docker push ${DOCKER_USERNAME}/liftright-data-server
-      on:
-        branch: main
+      branches:
+        - main
     - stage: deploy
       script: |
         export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
@@ -43,5 +43,5 @@ jobs:
         git commit kustomization.yaml -m "Update staging docker image to ${NEW_TAG}" &&
         git remote set-url origin https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-deploy.git &&
         git push origin main
-      on:
-        branch: main
+      branches:
+        - main
