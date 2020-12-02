@@ -94,16 +94,16 @@ jobs:
           cd ..
       install:
         - git clone https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-bench
+        - |
+          PSHA=$(git cat-file -p ${TRAVIS_COMMIT} |grep parent |tail -n1 |cut -d ' ' -f2) &&
+          PBRANCH=$(git name-rev --name-only ${PSHA}) &&
         - cd lrds-bench
         - docker-compose -f mongo-compose.yaml up -d
         - pipenv install
       script:
         - export BRANCH_TAG=${TRAVIS_BRANCH}-$(git rev-parse --short ${TRAVIS_COMMIT})
         - git clone --single-branch --branch=gh-pages https://github.com/lamalex/liftright-data-server.git output
-        - |
-          PSHA=$(git cat-file -p ${TRAVIS_COMMIT} |grep parent |tail -n1 |cut -d ' ' -f2) &&
-          PBRANCH=$(git name-rev --name-only ${PSHA}) &&
-          rm -f output/${PBRANCH}*.json
+        - rm -f output/${PBRANCH}*.json
         - pipenv run python bench-tags.py --runs=1 --on-tag=${BRANCH_TAG} --output=output
       after_script:
         - docker run --rm -it lumir/remove-dockerhub-tag --user ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD} ${DOCKER_USERNAME}/liftright-data-server:${BRANCH_TAG}
