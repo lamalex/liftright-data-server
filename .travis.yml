@@ -35,6 +35,25 @@ jobs:
           - docker push alexlauni/liftright-data-server
         on:
           branch: main
+    - stage: benchmark
+      language: python
+      before_install:
+        - sudo apt-get update
+        - sudo apt-get -y install wrk
+      install:
+        - pip install pipenv
+        - pipenv install
+      script:
+        - git clone https://github.com/LiftRight/bench
+        - cd bench
+        - mkdir output
+        - pipenv run python bench-tags.py --runs=1 --on-tag=latest --output=output
+      deploy:
+        edge: true
+        provider: pages:git
+        token: ${GH_TOKEN}
+        local_dir: output
+        cleanup: false
     - stage: rollout 
       if: branch = main
       before_install: 
