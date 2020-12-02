@@ -62,16 +62,10 @@ jobs:
         - pipenv install
       script:
         - export BRANCH_TAG=${TRAVIS_BRANCH}-$(git rev-parse --short ${TRAVIS_COMMIT})
-        - >-
-          git clone --single-branch --branch=gh-pages
-            https://github.com/lamalex/liftright-data-server.git output
+        - git clone --single-branch --branch=gh-pages https://github.com/lamalex/liftright-data-server.git output
         - pipenv run python bench-tags.py --runs=1 --on-tag=${BRANCH_TAG} --output=output
       after_script:
-        - >-
-          docker run --rm -it lumir/remove-dockerhub-tag
-            --user ${DOCKER_USERNAME}
-            --password ${DOCKER_PASSWORD}
-            ${DOCKER_USERNAME}/liftright-data-server:${BRANCH_TAG}
+        - docker run --rm -it lumir/remove-dockerhub-tag --user ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD} ${DOCKER_USERNAME}/liftright-data-server:${BRANCH_TAG}
       deploy:
         provider: pages
         edge: true
