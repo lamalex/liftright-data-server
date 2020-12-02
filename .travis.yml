@@ -103,6 +103,9 @@ jobs:
         - pipenv run python bench-tags.py --runs=1 --on-tag=${BRANCH_TAG} --output=output
       after_script:
         - docker run --rm -it lumir/remove-dockerhub-tag --user ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD} ${DOCKER_USERNAME}/liftright-data-server:${BRANCH_TAG}
+      before_deploy:
+        - export PARENT_BRANCH=$(git name-rev `git cat-file ${TRAVIS_COMMIT} |grep parent |cut -d' ' -f2|tail -n1` |cut -d'/' -f3)
+        - rm output/${PARENT_BRANCH}*
       deploy:
         provider: pages
         edge: true
