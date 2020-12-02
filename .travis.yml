@@ -51,7 +51,7 @@ jobs:
         - pipenv run python bench-tags.py --runs=1 --on-tag=latest --output=output
       deploy:
         edge: true
-        provider: pages:git
+        provider: pages
         token: ${GH_TOKEN}
         local_dir: output
         cleanup: false
