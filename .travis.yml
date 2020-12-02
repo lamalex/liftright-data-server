@@ -6,7 +6,6 @@ cache: cargo
 rust:
   - 1.45.2
 
-
 jobs:
   include:
     - stage: build
@@ -28,22 +27,24 @@ jobs:
         - docker pull ${DOCKER_USERNAME}/liftright-data-server
       script:
         - export SHORT_TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
+        - export BRANCH_TAG=${TRAVIS_BRANCH}-${SHORT_TAG}
         - docker build -t liftright-data-server -f Dockerfile .
-        - docker tag liftright-data-server ${TRAVIS_BRANCH}-${SHORT_TAG}
+        - docker tag liftright-data-server ${BRANCH_TAG}
+      before_deploy:
+        - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+        - echo ${BRANCH_TAG}
       deploy:
         - provider: script
           edge: true
           script:
-            - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
             - docker push alexlauni/liftright-data-server
           on:
             all_branches: true
         - provider: script
           edge: true
           script:
-            - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-            - docker push alexlauni/liftright-data-server
             - docker tag liftright-data-server ${SHORT_TAG}
+            - docker push alexlauni/liftright-data-server
           on:
             branch: main
     - stage: benchmark
