@@ -1,21 +1,21 @@
-# Benchmark of a6f3561-1, latest-1
+# Benchmark of a6f3561-1, latest-1, travis-work-d6a369f-1
 ## General Info & Checks
-|Check|a6f3561-1|latest-1|
-|---|---|---|
-|Docker image size (MB)|115|115|
-|Does not start with invalid mongodb connection string|Bad, did not exit in 15s|Bad, did not exit in 15s|
-|Does not start without env variables|Good, exited in 0.2s|Good, exited in 0.2s|
-|HTTP GET / returns 200 or 404|Good|Good|
-|HTTP GET /fnhjkdniudsancyne returns 404|Good|Good|
-|HTTP GET /v1/rtfb_status returns 404|Good|Good|
-|HTTP GET /v1/rtfb_status/{not-a-uuid} returns 404|Good|Good|
-|HTTP GET /v1/rtfb_status/{uuid} returns 200 and correct object|Good|Good|
-|Service logs a message containing 3030 (used port) on startup|Good|Good|
-|Service logs every request, message contains url path|Good|Good|
-|Startup time (to start responding) secs|**0.00591**|**0.00383**|
-|Stops gracefully|Bad, did not stop in 15.4s|Bad, did not stop in 15.4s|
-|Threads with 1 online vCPU, 1.0 soft CPU limit|liftright-data-|liftright-data-|
-|Threads with 2 online vCPUs, 2.0 soft CPU limit|liftright-data-|liftright-data-|
+|Check|a6f3561-1|latest-1|travis-work-d6a369f-1|
+|---|---|---|---|
+|Docker image size (MB)|115|115|115|
+|Does not start with invalid mongodb connection string|Bad, did not exit in 15s|Bad, did not exit in 15s|Bad, did not exit in 15s|
+|Does not start without env variables|Good, exited in 0.2s|Good, exited in 0.2s|Good, exited in 0.2s|
+|HTTP GET / returns 200 or 404|Good|Good|Good|
+|HTTP GET /fnhjkdniudsancyne returns 404|Good|Good|Good|
+|HTTP GET /v1/rtfb_status returns 404|Good|Good|Good|
+|HTTP GET /v1/rtfb_status/{not-a-uuid} returns 404|Good|Good|Good|
+|HTTP GET /v1/rtfb_status/{uuid} returns 200 and correct object|Good|Good|Good|
+|Service logs a message containing 3030 (used port) on startup|Good|Good|Good|
+|Service logs every request, message contains url path|Good|Good|Good|
+|Startup time (to start responding) secs|**0.00591**|**0.00383**|**0.00405**|
+|Stops gracefully|Bad, did not stop in 15.4s|Bad, did not stop in 15.4s|Bad, did not stop in 15.4s|
+|Threads with 1 online vCPU, 1.0 soft CPU limit|liftright-data-|liftright-data-|liftright-data-|
+|Threads with 2 online vCPUs, 2.0 soft CPU limit|liftright-data-|liftright-data-|liftright-data-|
 ## Graphs
 *The graphs are interactive, view the rendered HTML locally to enjoy it.*
 
