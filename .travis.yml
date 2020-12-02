@@ -24,9 +24,10 @@ jobs:
     - stage: build
       services:
         - docker
-      script: 
-        - docker build -t latest -f Dockerfile .
-        - docker tag $(git rev-parse --short ${TRAVIS_COMMIT}) liftright-data-server
+      script:
+        - export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
+        - docker build -t liftright-data-server -f Dockerfile .
+        - docker tag liftright-data-server liftright-data-server:${NEW_TAG}
       deploy:
         provider: script
         edge: true
@@ -54,9 +55,9 @@ jobs:
         token: ${GH_TOKEN}
         local_dir: output
         cleanup: false
-    - stage: rollout 
+    - stage: rollout
       if: branch = main
-      before_install: 
+      before_install:
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
           mv kustomize ~/bin
       script: |
