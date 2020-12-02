@@ -34,7 +34,7 @@ jobs:
           - docker push alexlauni/liftright-data-server
         on:
           branch: main
-    - stage: deploy
+    - stage: rollout 
       if: branch = main
       before_install: 
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
