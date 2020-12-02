@@ -58,6 +58,7 @@ jobs:
       deploy:
         edge: true
         provider: pages
+        strategy: git
         token: ${GH_TOKEN}
         local_dir: output
         cleanup: false
