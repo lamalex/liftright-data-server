@@ -104,7 +104,7 @@ jobs:
       after_script:
         - docker run --rm -it lumir/remove-dockerhub-tag --user ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD} ${DOCKER_USERNAME}/liftright-data-server:${BRANCH_TAG}
       before_deploy:
-        - export PARENT_BRANCH=$(git name-rev `git cat-file -p ${TRAVIS_COMMIT} |grep parent |cut -d' ' -f2|tail -n1` |cut -d'/' -f3)
+        - export PARENT_BRANCH=$(git name-rev `git cat-file -p ${TRAVIS_COMMIT} |grep parent |cut -d' ' -f2|tail -n1` |cut -d' ' -f2)
         - rm -f output/${PARENT_BRANCH}*
       deploy:
         provider: pages
