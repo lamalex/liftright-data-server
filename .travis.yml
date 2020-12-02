@@ -40,10 +40,14 @@ jobs:
       language: python
       before_install:
         - sudo apt-get update
-        - sudo apt-get -y install wrk
+        - sudo apt-get -y install uild-essential libssl-dev
       install:
         - pip install pipenv
         - pipenv install
+        - git clone https://github.com/wg/wrk.git wrk &&
+          cd wrk &&
+          make &&
+          mv wrk ~/bin
       script:
         - git clone https://github.com/LiftRight/bench
         - cd bench
