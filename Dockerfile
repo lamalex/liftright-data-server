@@ -33,7 +33,7 @@ RUN cargo build --release
 # ------------------------------------------------------------------------------
 # Final Stage 
 # ------------------------------------------------------------------------------
-FROM debian:buster-slim
+FROM debian:buster-slim as runtime
 
 RUN apt-get update \
     && apt-get install -y ca-certificates tzdata \

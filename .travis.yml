@@ -6,6 +6,11 @@ cache: cargo
 rust:
   - 1.45.2
 
+env:
+  global:
+    BASE_IMAGE: alexlauni/liftright-data-server
+    DOCKER_BUILDKIT: 1
+
 jobs:
   include:
     - stage: build
@@ -23,28 +28,57 @@ jobs:
     - stage: build
       services:
         - docker
-      install:
-        - docker pull ${DOCKER_USERNAME}/liftright-data-server
+      before_script:
+        - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
       script:
         - export SHORT_TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
         - export BRANCH_TAG=${TRAVIS_BRANCH}-${SHORT_TAG}
-        - docker build -t liftright-data-server -f Dockerfile .
-        - docker tag liftright-data-server ${BRANCH_TAG}
-      before_deploy:
-        - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-        - echo ${BRANCH_TAG}
+        - docker build
+          --target planner
+          --cache-from ${BASE_IMAGE}:planner
+          --tag ${BASE_IMAGE}:planner
+          --build-arg BUILDKIT_INLINE_CACHE=1
+          "."
+        - docker build
+          --target cacher
+          --cache-from ${BASE_IMAGE}:planner
+          --cache-from ${BASE_IMAGE}:cacher
+          --tag ${BASE_IMAGE}:cacher
+          --build-arg BUILDKIT_INLINE_CACHE=1
+          "."
+        - docker build
+          --target builder
+          --cache-from ${BASE_IMAGE}:planner
+          --cache-from ${BASE_IMAGE}:cacher
+          --cache-from ${BASE_IMAGE}:builder
+          --tag ${BASE_IMAGE}:builder
+          --build-arg BUILDKIT_INLINE_CACHE=1
+          "."
+        - docker build
+          --cache-from ${BASE_IMAGE}:planner
+          --cache-from ${BASE_IMAGE}:cacher
+          --cache-from ${BASE_IMAGE}:builder
+          --cache-from ${BASE_IMAGE}:latest 
+          --tag ${BASE_IMAGE}:latest
+          --tag ${BASE_IMAGE}:${BRANCH_TAG}
+          --build-arg BUILDKIT_INLINE_CACHE=1
+          "."
+      after_success:
+        - docker push ${BASE_IMAGE}:planner
+        - docker push ${BASE_IMAGE}:cacher
+        - docker push ${BASE_IMAGE}:builder
       deploy:
         - provider: script
           edge: true
           script:
-            - docker push alexlauni/liftright-data-server
+            - docker push ${BASE_IMAGE}
           on:
             all_branches: true
         - provider: script
           edge: true
           script:
-            - docker tag liftright-data-server ${SHORT_TAG}
-            - docker push alexlauni/liftright-data-server
+            - docker tag ${BASE_IMAGE} ${BASE_IMAGE}:${SHORT_TAG}
+            - docker push ${BASE_IMAGE}
           on:
             branch: main
     - stage: benchmark
