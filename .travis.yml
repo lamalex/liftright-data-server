@@ -24,6 +24,8 @@ jobs:
     - stage: build
       services:
         - docker
+      install:
+        - docker pull ${DOCKER_USERNAME}/liftright-data-server
       script:
         - export SHORT_TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
         - docker build -t liftright-data-server -f Dockerfile .
