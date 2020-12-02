@@ -25,17 +25,25 @@ jobs:
       services:
         - docker
       script:
-        - export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
+        - export SHORT_TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
         - docker build -t liftright-data-server -f Dockerfile .
-        - docker tag liftright-data-server liftright-data-server:${NEW_TAG}
+        - docker tag liftright-data-server ${TRAVIS_BRANCH}-${SHORT_TAG}
       deploy:
-        provider: script
-        edge: true
-        script:
-          - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-          - docker push alexlauni/liftright-data-server
-        on:
-          branch: main
+        - provider: script
+          edge: true
+          script:
+            - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+            - docker push alexlauni/liftright-data-server
+          on:
+            all_branches: true
+        - provider: script
+          edge: true
+          script:
+            - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+            - docker push alexlauni/liftright-data-server
+            - docker tag liftright-data-server ${SHORT_TAG}
+          on:
+            branch: main
     - stage: benchmark
       language: python
       python:
@@ -53,11 +61,18 @@ jobs:
         - docker-compose -f mongo-compose.yaml up -d
         - pipenv install
       script:
-        - mkdir output
-        - pipenv run python bench-tags.py --runs=1 --on-tag=latest --output=output
+        - export BRANCH_TAG=${TRAVIS_BRANCH}-$(git rev-parse --short ${TRAVIS_COMMIT})
+        - git clone --single-branch --branch=gh-pages \
+          https://github.com/lamalex/liftright-data-server.git output
+        - pipenv run python bench-tags.py --runs=1 --on-tag=${BRANCH_TAG} --output=output
+      after_script:
+        - docker run --rm -it lumir/remove-dockerhub-tag \
+            --user ${DOCKER_USERNAME} \
+            --password ${DOCKER_PASSWORD} \
+            ${DOCKER_USERNAME}/liftright-data-server:${BRANCH_TAG}
       deploy:
-        edge: true
         provider: pages
+        edge: true
         strategy: git
         token: ${GH_TOKEN}
         local_dir: output
@@ -70,10 +85,10 @@ jobs:
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
           mv kustomize ~/bin
       script: |
-        export NEW_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
+        export SHORT_TAG=$(git rev-parse --short ${TRAVIS_COMMIT}) &&
         git clone https://github.com/LiftRight/lrds-deploy.git &&
         cd lrds-deploy/lrds/overlays/staging &&
-        kustomize edit set image alexlauni/liftright-data-server=alexlauni/liftright-data-server:${NEW_TAG} &&
-        git commit kustomization.yaml -m "Update staging docker image to ${NEW_TAG}" &&
+        kustomize edit set image alexlauni/liftright-data-server=alexlauni/liftright-data-server:${SHORT_TAG} &&
+        git commit kustomization.yaml -m "Update staging docker image to ${SHORT_TAG}" &&
         git remote set-url origin https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-deploy.git &&
         git push origin main
