@@ -96,7 +96,7 @@ jobs:
         - git clone https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-bench
         - |
           PSHA=$(git cat-file -p ${TRAVIS_COMMIT} |grep parent |tail -n1 |cut -d ' ' -f2) &&
-          PBRANCH=$(git name-rev --name-only ${PSHA}) &&
+          PBRANCH=$(git name-rev --name-only ${PSHA})
         - cd lrds-bench
         - docker-compose -f mongo-compose.yaml up -d
         - pipenv install
