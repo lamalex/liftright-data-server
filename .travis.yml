@@ -38,19 +38,21 @@ jobs:
           branch: main
     - stage: benchmark
       language: python
+      python:
+        - "3.8"
       before_install:
-        - sudo apt-get update
-        - sudo apt-get -y install build-essential libssl-dev
-      install:
         - pip install pipenv
-        - pipenv install
         - git clone https://github.com/wg/wrk.git wrk &&
           cd wrk &&
           make &&
-          mv wrk ~/bin
+          mv wrk ~/bin &&
+          cd ..
+      install:
+        - git clone https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-bench
+        - cd lrds-bench
+        - docker-compose -f mongo-compose.yaml up -d
+        - pipenv install
       script:
-        - git clone https://github.com/LiftRight/bench
-        - cd bench
         - mkdir output
         - pipenv run python bench-tags.py --runs=1 --on-tag=latest --output=output
       deploy:
@@ -59,6 +61,8 @@ jobs:
         token: ${GH_TOKEN}
         local_dir: output
         cleanup: false
+        on:
+          all_branches: true
     - stage: rollout
       if: branch = main
       before_install:
