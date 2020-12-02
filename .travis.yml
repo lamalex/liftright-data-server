@@ -113,7 +113,7 @@ jobs:
         on:
           all_branches: true
     - stage: rollout
-      if: branch = main
+      if: branch = main AND NOT type = pull_request
       before_install:
         - curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash &&
           mv kustomize ~/bin
