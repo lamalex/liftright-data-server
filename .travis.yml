@@ -6,8 +6,6 @@ cache: cargo
 rust:
   - 1.45.2
 
-services:
-  - docker
 
 jobs:
   include:
@@ -24,6 +22,8 @@ jobs:
         cargo build &&
         cargo test
     - stage: build
+      services:
+        - docker
       script: 
         - docker build -t latest -f Dockerfile .
         - docker tag $(git rev-parse --short ${TRAVIS_COMMIT}) liftright-data-server
