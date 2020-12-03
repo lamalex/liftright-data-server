@@ -5,7 +5,7 @@
     <title>Benchmark Report</title>
   </head>
   <body>
-<h1>Benchmark of a6f3561-1, graph-cleanup-38cd1bc-1, graph-cleanup-ce820f1-1, main-7c9d138-1, main-bd30911-1, use-ppa-ee39b95-1</h1>
+<h1>Benchmark of a6f3561-1, graph-cleanup-38cd1bc-1, graph-cleanup-ce820f1-1, graph-cleanup-edbfa1b-1, use-ppa-ee39b95-1</h1>
 <h2>General Info &amp; Checks</h2>
 <table>
 <thead>
@@ -14,15 +14,13 @@
 <th>a6f3561-1</th>
 <th>graph-cleanup-38cd1bc-1</th>
 <th>graph-cleanup-ce820f1-1</th>
-<th>main-7c9d138-1</th>
-<th>main-bd30911-1</th>
+<th>graph-cleanup-edbfa1b-1</th>
 <th>use-ppa-ee39b95-1</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Docker image size (MB)</td>
-<td>111</td>
 <td>111</td>
 <td>111</td>
 <td>111</td>
@@ -36,11 +34,9 @@
 <td>Bad, did not exit in 15s</td>
 <td>Bad, did not exit in 15s</td>
 <td>Bad, did not exit in 15s</td>
-<td>Bad, did not exit in 15s</td>
 </tr>
 <tr>
 <td>Does not start without env variables</td>
-<td>Good, exited in 0.2s</td>
 <td>Good, exited in 0.2s</td>
 <td>Good, exited in 0.2s</td>
 <td>Good, exited in 0.2s</td>
@@ -54,11 +50,9 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
-<td>Good</td>
 </tr>
 <tr>
 <td>HTTP GET /fnhjkdniudsancyne returns 404</td>
-<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -72,11 +66,9 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
-<td>Good</td>
 </tr>
 <tr>
 <td>HTTP GET /v1/rtfb_status/{not-a-uuid} returns 404</td>
-<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -90,11 +82,9 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
-<td>Good</td>
 </tr>
 <tr>
 <td>Service logs a message containing 3030 (used port) on startup</td>
-<td>Good</td>
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
@@ -108,20 +98,17 @@
 <td>Good</td>
 <td>Good</td>
 <td>Good</td>
-<td>Good</td>
 </tr>
 <tr>
 <td>Startup time (to start responding) secs</td>
 <td><strong>0.00474</strong></td>
 <td><strong>0.00668</strong></td>
 <td><strong>0.00314</strong></td>
-<td><strong>0.00448</strong></td>
-<td><strong>0.00422</strong></td>
+<td><strong>0.00516</strong></td>
 <td><strong>0.00342</strong></td>
 </tr>
 <tr>
 <td>Stops gracefully</td>
-<td>Bad, did not stop in 15.4s</td>
 <td>Bad, did not stop in 15.4s</td>
 <td>Bad, did not stop in 15.4s</td>
 <td>Bad, did not stop in 15.4s</td>
