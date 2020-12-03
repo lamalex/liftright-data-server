@@ -104,6 +104,7 @@ jobs:
       script:
         - export BRANCH_TAG=${TRAVIS_BRANCH}-$(git rev-parse --short ${TRAVIS_COMMIT})
         - git clone --single-branch --branch=gh-pages https://github.com/lamalex/liftright-data-server.git output
+        - echo "Removing ${PBRANCH}*.json"
         - rm -f output/${PBRANCH}*.json
         - pipenv run python bench-tags.py --runs=1 --on-tag=${BRANCH_TAG} --output=output
       after_script:
