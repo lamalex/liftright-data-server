@@ -86,12 +86,10 @@ jobs:
       python:
         - "3.8"
       before_install:
+        - sudo add-apt-repository -y ppa:jfhovinne/groovy-focal-backports
+        - sudo apt-get -q update
+        - sudo apt-get -y install wrk
         - pip install pipenv
-        - git clone https://github.com/wg/wrk.git wrk &&
-          cd wrk &&
-          make &&
-          mv wrk ~/bin &&
-          cd ..
       install:
         - git clone https://launibot:${GH_TOKEN}@github.com/LiftRight/lrds-bench
         - |
